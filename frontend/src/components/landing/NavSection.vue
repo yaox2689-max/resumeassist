@@ -16,7 +16,7 @@ const { scrolled } = useScrollState()
       <!-- Logo -->
       <router-link to="/" class="flex items-center gap-3 text-xl font-bold" style="font-family: var(--font-heading); color: var(--color-ink);">
         <CapybaraLogo :size="36" />
-        CapyMock
+        ResumeAst
       </router-link>
 
       <!-- Nav links -->

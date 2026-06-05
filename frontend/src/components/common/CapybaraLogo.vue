@@ -11,7 +11,7 @@ defineProps({
 <template>
   <img
     :src="capyLogo"
-    alt="CapyMock"
+    alt="ResumeAst"
     :width="size"
     :height="size"
     class="object-contain shrink-0"

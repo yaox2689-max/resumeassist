@@ -50,7 +50,7 @@ const bottomLinks = [
           <div class="flex items-center gap-2">
             <CapybaraLogo :size="24" />
             <span class="font-semibold text-sm">
-              {{ route.meta.title?.replace(' — CapyMock', '') || '分析' }}
+              {{ route.meta.title?.replace(' — ResumeAst', '') || '分析' }}
             </span>
           </div>
         </div>
