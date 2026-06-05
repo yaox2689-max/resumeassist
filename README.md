@@ -5,7 +5,6 @@
 3. **人性化而非企业化** — 对话式语气，自然流畅
 4. **清晰而不冰冷** — 干净的布局，温暖的色彩与动效
 
-![CapyMock 首页](homepage.png)
 
 ## 简介
 
@@ -55,7 +54,6 @@ CapyMock 是一间面试前的练习室 —— 温暖、包容、不带评判。
              → SSE 事件推送到前端
 ```
 
-![文字面试模式](text_mode_interview.png)
 
 ### 语音面试（WebSocket 实时）
 
@@ -65,17 +63,6 @@ CapyMock 是一间面试前的练习室 —— 温暖、包容、不带评判。
               → 客户端音频 ↔ 实时 LLM（DashScope Qwen-Omni / OpenAI）
               → 支持 VAD、打断（barge-in）、实时转写
 ```
-
-![语音面试模式](voice-mode-interview.png)
-
-### GitHub 仓库分析
-
-![GitHub 仓库分析](github_repo_analysis_1.png)
-![GitHub 仓库分析详情](github_repo_analysis_2.png)
-
-### 岗位描述分析
-
-![JD 分析](JD_analysis.png)
 
 ## 快速开始
 
@@ -148,6 +135,3 @@ job-seeker-assistant/
 └── README.md               # 本文件
 ```
 
-## License
-
-MIT
