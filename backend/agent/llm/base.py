@@ -1,0 +1,89 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
+from dataclasses import dataclass
+
+from agent.llm.events import LLMEvent, ProviderError, TextDelta, ToolCallEnd, Usage
+from agent.llm.realtime.base import RealtimeSession
+
+
+@dataclass
+class CompletionResult:
+    """Result of a non-streaming LLM call."""
+
+    text: str
+    tool_calls: list[dict]
+    usage: Usage | None = None
+    error: str | None = None
+
+
+class BaseLLM(ABC):
+    """Abstract base class for all LLM providers."""
+
+    @abstractmethod
+    async def stream(
+        self,
+        messages: list[dict],
+        tools: list[dict] | None = None,
+    ) -> AsyncIterator[LLMEvent]:
+        """Stream LLM events for a conversation."""
+        ...
+
+    async def chat(
+        self,
+        messages: list[dict],
+        tools: list[dict] | None = None,
+    ) -> CompletionResult:
+        """Non-streaming chat. Default implementation collects from stream()."""
+        text_parts: list[str] = []
+        tool_calls: list[dict] = []
+        usage: Usage | None = None
+        error: str | None = None
+
+        async for event in self.stream(messages, tools):
+            if isinstance(event, TextDelta):
+                text_parts.append(event.delta)
+            elif isinstance(event, ToolCallEnd):
+                tool_calls.append({
+                    "id": event.tool_call_id,
+                    "name": event.tool_name,
+                    "args": event.args,
+                })
+            elif isinstance(event, Usage):
+                usage = event
+            elif isinstance(event, ProviderError):
+                error = event.message
+
+        return CompletionResult(
+            text="".join(text_parts),
+            tool_calls=tool_calls,
+            usage=usage,
+            error=error,
+        )
+
+    @abstractmethod
+    def get_model_name(self) -> str:
+        """Return the model name."""
+        ...
+
+
+class BaseRealtimeLLM(BaseLLM):
+    """Abstract base for Realtime LLM providers.
+
+    Subclasses must implement realtime_connect() which returns a RealtimeSession
+    context manager providing async iteration over upstream events and outbound
+    verbs (send_audio, commit_audio, create_response, cancel_response, etc.).
+    """
+
+    @abstractmethod
+    async def realtime_connect(
+        self,
+        instructions: str,
+        tools: list[dict],
+        voice: str,
+        vad: dict,
+        transcription: dict,
+    ) -> RealtimeSession:
+        """Establish a realtime connection and return a RealtimeSession."""
+        ...
