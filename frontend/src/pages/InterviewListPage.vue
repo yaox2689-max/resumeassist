@@ -153,7 +153,7 @@ async function handleDelete(id) {
         </svg>
       </div>
       <h3 class="text-lg font-semibold text-ink mb-2">还没有面试记录</h3>
-      <p class="text-sm text-ink-muted mb-6">上传简历并分析GitHub仓库后即可开始面试</p>
+      <p class="text-sm text-ink-muted mb-6">上传简历后即可开始面试</p>
       <button
         class="btn btn--primary"
         @click="handleStartNew"
@@ -186,7 +186,7 @@ async function handleDelete(id) {
           </svg>
         </div>
         <h3 class="font-semibold text-ink mb-1">开始新面试</h3>
-        <p class="text-sm text-ink-muted">上传简历并分析GitHub仓库后即可开始面试</p>
+        <p class="text-sm text-ink-muted">上传简历后即可开始面试</p>
       </div>
     </div>
 

@@ -45,16 +45,6 @@ const routes = [
     meta: { title: '模拟面试 — ResumeAst', requiresAuth: true },
   },
   {
-    path: '/analysis/github',
-    component: () => import('@/layouts/GitHubLayout.vue'),
-    meta: { title: 'GitHub 源码分析 — ResumeAst', requiresAuth: true },
-    children: [
-      { path: '', name: 'github-list', component: () => import('@/pages/github/GitHubListPage.vue') },
-      { path: ':id', name: 'github-overview', component: () => import('@/pages/github/GitHubOverviewPage.vue'), meta: { title: '仓库概览 — ResumeAst' } },
-      { path: ':id/deep', name: 'github-deep', component: () => import('@/pages/github/GitHubDeepPage.vue'), meta: { title: '深度分析 — ResumeAst' } },
-    ],
-  },
-  {
     path: '/analysis/jd',
     name: 'jd',
     component: () => import('@/pages/JdPage.vue'),

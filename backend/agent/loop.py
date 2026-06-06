@@ -63,7 +63,6 @@ class ReActAgent:
         session_id: str,
         cancel_token: CancelToken | None = None,
         resume_content: str = "",
-        github_repos: list[str] | None = None,
         resume_id: str = "",
     ) -> None:
         self.profile = profile
@@ -78,16 +77,12 @@ class ReActAgent:
         self.cancel_token = cancel_token or CancelToken()
         self.state = AgentState.IDLE
         self._resume_content = resume_content
-        self._github_repos = github_repos or []
         self._resume_id = resume_id
         self._text_buffer: list[str] = []
         self._current_tool_calls: list[ToolCall] = []
         self._session_obj: object | None = None
-        self._repo_url: str = ""
         self._sandbox_root: str = ""
-        self._current_repo_path: str = ""
         self._db_session: object | None = None
-        self._repo_root: str = ""
 
     async def run(self, user_input: str) -> AsyncIterator[FrontendEvent]:
         """Run the ReAct loop for a user input.
@@ -115,7 +110,6 @@ class ReActAgent:
                 resume_content=self._resume_content,
                 user_id=self.user_id,
                 resume_id=self._resume_id,
-                github_repos=self._github_repos,
             )
 
             # Check if compaction is needed
@@ -316,10 +310,7 @@ class ReActAgent:
                 profile=self.profile,
                 cancel_token=self.cancel_token,
                 sandbox_root=self._sandbox_root,
-                current_repo_path=self._current_repo_path,
                 db_session=self._db_session,
-                repo_root=self._repo_root,
-                repo_url=self._repo_url,
             )
 
         async def execute_one(call: ToolCall) -> ToolResult:
@@ -344,16 +335,6 @@ class ReActAgent:
 
         events = []
         for call, result in zip(self._current_tool_calls, results):
-            # Track repo_path from clone_repo results
-            if (
-                call.tool_name == "clone_repo"
-                and result.status == "ok"
-                and result.data
-            ):
-                repo_path = result.data.get("repo_path")
-                if repo_path:
-                    self._current_repo_path = repo_path
-
             # Tool call end event
             events.append(FrontendEvent(
                 type=EventType.TOOL_CALL_END,
@@ -401,16 +382,6 @@ class ReActAgent:
                     output=tool_result_output(result),
                     level=span_level_for_result(result),
                 )
-
-            # Track repo_path from clone_repo results
-            if (
-                call.tool_name == "clone_repo"
-                and result.status == "ok"
-                and result.data
-            ):
-                repo_path = result.data.get("repo_path")
-                if repo_path:
-                    self._current_repo_path = repo_path
 
             yield FrontendEvent(
                 type=EventType.TOOL_CALL_END,
@@ -474,10 +445,7 @@ class ReActAgent:
                 profile=self.profile,
                 cancel_token=self.cancel_token,
                 sandbox_root=self._sandbox_root,
-                current_repo_path=self._current_repo_path,
                 db_session=self._db_session,
-                repo_root=self._repo_root,
-                repo_url=self._repo_url,
                 resume_id=self._resume_id,
                 memory_root="storage/memory",
             )

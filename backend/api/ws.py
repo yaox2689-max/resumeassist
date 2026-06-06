@@ -96,7 +96,6 @@ async def _handle_voice_mode(
     profile_id = ctx["profile_id"]
     user_id = ctx["user_id"]
     resume_content = ctx.get("resume_content") or ""
-    github_repos = ctx.get("github_repos") or []
     resume_id = ctx.get("resume_id") or ""
 
     capy_note = ""
@@ -114,7 +113,6 @@ async def _handle_voice_mode(
             session_id=session_id,
             user_id=user_id,
             resume_content=resume_content,
-            github_repos=github_repos,
             resume_id=resume_id or "",
             capy_note=capy_note,
         )

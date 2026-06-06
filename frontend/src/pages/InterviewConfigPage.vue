@@ -5,9 +5,6 @@ import { useInterviewConfig } from '@/composables/useInterviewConfig.js'
 const {
   resumes,
   resumesLoading,
-  githubRepos,
-  reposLoading,
-  selectedGithubRepos,
   interviewTypes,
   selectedResume,
   selectedType,
@@ -15,7 +12,6 @@ const {
   starting,
   handleStartInterview,
   handleGoToUpload,
-  handleGoToAnalysis,
 } = useInterviewConfig()
 
 function formatDate(iso) {
@@ -93,49 +89,6 @@ function formatDate(iso) {
               <div class="text-sm text-ink-muted">{{ type.description }}</div>
             </div>
           </label>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-surface border border-border-light dark:border-border rounded-xl p-6">
-        <div class="flex items-center gap-2 mb-1 font-semibold text-ink">
-          <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">3</div>
-          <span>GitHub 仓库（可选）</span>
-        </div>
-        <p class="text-xs text-ink-muted ml-10 mb-4">选择已分析的仓库，让面试官了解你的项目经验</p>
-
-        <div v-if="reposLoading" class="text-center py-6">
-          <p class="text-sm text-ink-muted">加载中...</p>
-        </div>
-
-        <div v-else-if="githubRepos.length > 0" class="space-y-3">
-          <label
-            v-for="repo in githubRepos"
-            :key="repo.id"
-            class="flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all"
-            :class="selectedGithubRepos.includes(repo.id) ? 'border-primary bg-primary/5' : 'border-border-light dark:border-border hover:border-primary/50'"
-          >
-            <input
-              type="checkbox"
-              :value="repo.id"
-              v-model="selectedGithubRepos"
-              class="w-4 h-4 text-primary accent-primary"
-            />
-            <div class="flex-1 min-w-0">
-              <div class="font-medium text-ink truncate">{{ repo.fullName }}</div>
-              <div class="text-xs text-ink-muted truncate">{{ repo.description || '暂无描述' }}</div>
-            </div>
-            <span
-              v-if="repo.techTags?.length"
-              class="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary flex-shrink-0"
-            >
-              {{ repo.techTags[0] }}
-            </span>
-          </label>
-        </div>
-
-        <div v-else class="text-center py-6">
-          <p class="text-sm text-ink-muted mb-3">暂无已分析的仓库</p>
-          <button class="text-sm text-primary hover:underline" @click="handleGoToAnalysis">去分析 →</button>
         </div>
       </div>
 

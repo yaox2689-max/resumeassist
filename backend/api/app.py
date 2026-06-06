@@ -13,7 +13,6 @@ from agent.factory import AgentFactory
 from agent.profile_loader import ProfileLoader
 from api.auth import router as auth_router
 from api.chat import router as sse_router
-from api.github_analysis import router as analysis_router
 from api.jd_analysis import router as jd_router
 from api.resume_analysis import router as resume_router
 from api.sessions import router as api_router
@@ -85,7 +84,6 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(api_router, prefix="/api")
 app.include_router(sse_router, prefix="/api")
 app.include_router(tasks_router, prefix="/api")
-app.include_router(analysis_router, prefix="/api")
 app.include_router(jd_router, prefix="/api")
 app.include_router(resume_router, prefix="/api")
 app.include_router(ws_router)

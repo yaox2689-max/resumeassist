@@ -23,7 +23,6 @@ class ContextBuilder:
         resume_content: str | None = None,
         user_id: str | None = None,
         resume_id: str | None = None,
-        github_repos: list[str] | None = None,
     ) -> list[dict]:
         """Build messages list for LLM from profile and session events.
 
@@ -34,7 +33,6 @@ class ContextBuilder:
             resume_content: Resume content to inject into system prompt
             user_id: User ID for memory lookup
             resume_id: Resume ID for memory lookup
-            github_repos: List of GitHub repo analysis JSON strings
 
         Returns:
             List of message dicts for LLM API
@@ -45,7 +43,6 @@ class ContextBuilder:
         system_prompt = self._build_system_prompt(
             profile, resume_content=resume_content,
             user_id=user_id, resume_id=resume_id,
-            github_repos=github_repos,
         )
         messages.append({"role": "system", "content": system_prompt})
 
@@ -65,7 +62,6 @@ class ContextBuilder:
         resume_content: str | None = None,
         user_id: str | None = None,
         resume_id: str | None = None,
-        github_repos: list[str] | None = None,
     ) -> str:
         """Build the system prompt from profile, skills, resume, and memory."""
         # Read prompt template
@@ -85,12 +81,6 @@ class ContextBuilder:
         # Inject resume content
         if resume_content:
             base_prompt += f"\n\n## 用户简历\n{resume_content}\n"
-
-        # Inject GitHub repo analyses
-        if github_repos:
-            base_prompt += "\n\n## GitHub 仓库分析\n"
-            for repo_content in github_repos:
-                base_prompt += f"\n{repo_content}\n"
 
         # Inject memory files
         if user_id and resume_id:

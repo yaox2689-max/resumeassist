@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -57,7 +56,6 @@ class AgentFactory:
         user_id: str = "default",
         db_session: object | None = None,
         resume_content: str = "",
-        github_repos: list[str] | None = None,
         resume_id: str = "",
         capy_note: str = "",
     ) -> ReActAgent:
@@ -71,7 +69,6 @@ class AgentFactory:
                 profile_id, session_id,
                 user_id=user_id,
                 resume_content=resume_content,
-                github_repos=github_repos,
                 resume_id=resume_id,
                 capy_note=capy_note,
             )
@@ -80,7 +77,6 @@ class AgentFactory:
             user_id=user_id,
             db_session=db_session,
             resume_content=resume_content,
-            github_repos=github_repos,
             resume_id=resume_id,
         )
 
@@ -94,7 +90,6 @@ class AgentFactory:
         user_id: str = "default",
         db_session: object | None = None,
         resume_content: str = "",
-        github_repos: list[str] | None = None,
         resume_id: str = "",
     ) -> ReActAgent:
         """Create a text-mode ReActAgent."""
@@ -116,7 +111,6 @@ class AgentFactory:
             user_id=user_id,
             session_id=session_id,
             resume_content=resume_content,
-            github_repos=github_repos or [],
             resume_id=resume_id,
         )
         agent._db_session = db_session
@@ -131,7 +125,6 @@ class AgentFactory:
         *,
         user_id: str = "default",
         resume_content: str = "",
-        github_repos: list[str] | None = None,
         resume_id: str = "",
         capy_note: str = "",
     ) -> RealtimeAgent:  # noqa: F821
@@ -147,7 +140,7 @@ class AgentFactory:
         realtime_llm = self._create_realtime_llm(profile)
         tools = self._get_tools(profile, allow_list={"save_real_question"})
         instructions = self._build_realtime_instructions(
-            profile, resume_content, github_repos or [], capy_note
+            profile, resume_content, capy_note
         )
 
         return RealtimeAgent(
@@ -211,7 +204,6 @@ class AgentFactory:
         self,
         profile: AgentProfile,
         resume_content: str,
-        github_repos: list,
         capy_note: str,
     ) -> str:
         """Build instructions for the realtime agent."""
@@ -227,15 +219,6 @@ class AgentFactory:
 
         if resume_content:
             parts.append(f"[简历]\n{resume_content}")
-
-        if github_repos:
-            repo_texts = []
-            for repo in github_repos:
-                if isinstance(repo, str):
-                    repo_texts.append(repo)
-                else:
-                    repo_texts.append(json.dumps(repo, ensure_ascii=False))
-            parts.append(f"[GitHub 仓库分析]\n{chr(10).join(repo_texts)}")
 
         if capy_note:
             parts.append(f"[用户历史画像]\n{capy_note}")

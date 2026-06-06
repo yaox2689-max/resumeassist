@@ -1,6 +1,5 @@
 /**
  * API service layer
- * GitHub analysis uses real backend; other endpoints use mock adapter.
  */
 
 import { mockAdapter } from './mock.js'
@@ -15,7 +14,7 @@ function getAuthHeaders() {
   return {}
 }
 
-// Mock adapter for non-GitHub endpoints
+// Mock adapter for other endpoints
 async function mockRequest(path, options = {}) {
   await new Promise((r) => setTimeout(r, 2000))
   return mockAdapter(path, options)
@@ -69,35 +68,6 @@ export const api = {
     return realRequest('/auth/me')
   },
 
-  // GitHub analysis (real backend)
-  analyzeGithub(url) {
-    return realRequest('/analysis', {
-      method: 'POST',
-      body: JSON.stringify({ repo_url: url }),
-    })
-  },
-
-  getGithubRepos() {
-    return realRequest('/analysis')
-  },
-
-  getGithubRepo(id) {
-    return realRequest(`/analysis/${id}`)
-  },
-
-  getGithubDeep(id) {
-    return realRequest(`/analysis/${id}`)
-  },
-
-  // Task progress (real backend)
-  getTaskStatus(taskId) {
-    return realRequest(`/tasks/${taskId}`)
-  },
-
-  getTaskStreamUrl(taskId) {
-    return `/api/tasks/${taskId}/stream`
-  },
-
   // JD analysis (real backend)
   analyzeJd(text) {
     return realRequest('/jd/analyze', {
@@ -146,14 +116,13 @@ export const api = {
   },
 
   // Interview sessions (real backend)
-  createSession({ profileId, mode = 'text', resumeId = null, githubRepoIds = [] }) {
+  createSession({ profileId, mode = 'text', resumeId = null }) {
     return realRequest('/sessions', {
       method: 'POST',
       body: JSON.stringify({
         profile_id: profileId,
         mode,
         resume_id: resumeId,
-        github_repo_ids: githubRepoIds,
       }),
     })
   },

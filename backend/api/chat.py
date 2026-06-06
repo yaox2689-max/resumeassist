@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from collections.abc import AsyncIterator
 
@@ -15,7 +14,7 @@ from agent.loop import CancelToken
 from api.deps import get_agent_factory, get_session_store
 from api.schemas import EventType, FrontendEvent
 from storage.db.engine import async_session_factory
-from storage.db.models import RepoAnalysis, Resume, Session
+from storage.db.models import Resume, Session
 from storage.session.store import SessionStore
 
 logger = logging.getLogger(__name__)
@@ -55,9 +54,9 @@ def _get_or_create_session_state(session_id: str) -> dict:
 
 
 async def _load_session_context(session_id: str) -> dict:
-    """Load session metadata, resume content, and repo analyses from DB.
+    """Load session metadata and resume content from DB.
 
-    Returns dict with user_id, profile_id, resume_id, resume_content, github_repos.
+    Returns dict with user_id, profile_id, resume_id, resume_content.
     Raises HTTPException if session not found.
     """
     async with async_session_factory() as db:
@@ -74,7 +73,6 @@ async def _load_session_context(session_id: str) -> dict:
             "profile_id": session.profile_id,
             "resume_id": session.resume_id,
             "resume_content": "",
-            "github_repos": [],
         }
 
         # Load resume content if available
@@ -85,21 +83,6 @@ async def _load_session_context(session_id: str) -> dict:
             resume = resume_result.scalar_one_or_none()
             if resume and resume.content:
                 ctx["resume_content"] = resume.content
-
-        # Load GitHub repo analyses if available
-        if session.github_repo_ids:
-            repo_ids = json.loads(session.github_repo_ids)
-            if repo_ids:
-                repo_result = await db.execute(
-                    select(RepoAnalysis).where(
-                        RepoAnalysis.id.in_(repo_ids),
-                        RepoAnalysis.status == "done",
-                    )
-                )
-                repos = repo_result.scalars().all()
-                ctx["github_repos"] = [
-                    r.result_json for r in repos if r.result_json
-                ]
 
     return ctx
 
@@ -147,7 +130,6 @@ async def send_message(
                 mode="text",
                 user_id=ctx["user_id"],
                 resume_content=ctx["resume_content"],
-                github_repos=ctx["github_repos"],
                 resume_id=ctx["resume_id"],
             )
             agent.cancel_token = state["cancel_token"]
@@ -197,7 +179,6 @@ async def chat(
             mode="text",
             user_id=ctx["user_id"],
             resume_content=ctx["resume_content"],
-            github_repos=ctx["github_repos"],
             resume_id=ctx["resume_id"],
         )
     except Exception as e:

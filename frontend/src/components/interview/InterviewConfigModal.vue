@@ -9,8 +9,6 @@ const emit = defineEmits(['close'])
 
 const {
   resumes,
-  githubRepos,
-  selectedGithubRepos,
   interviewTypes,
   selectedResume,
   selectedType,
@@ -18,7 +16,6 @@ const {
   starting,
   handleStartInterview: startInterview,
   handleGoToUpload,
-  handleGoToAnalysis,
 } = useInterviewConfig()
 
 function formatDate(dateStr) {
@@ -117,39 +114,6 @@ function handleClose() {
                 <div class="config-option__desc">{{ type.description }}</div>
               </div>
             </label>
-          </div>
-        </div>
-
-        <div class="config-step">
-          <div class="config-step__header">
-            <div class="config-step__number">3</div>
-            <span class="config-step__title">GitHub 仓库（可选）</span>
-          </div>
-          <p class="config-step__hint">选择已分析的仓库，让面试官了解你的项目经验</p>
-
-          <div v-if="githubRepos.length > 0" class="config-step__options">
-            <label
-              v-for="repo in githubRepos"
-              :key="repo.id"
-              class="config-option"
-              :class="{ 'config-option--selected': selectedGithubRepos.includes(repo.id) }"
-            >
-              <input
-                type="checkbox"
-                :value="repo.id"
-                v-model="selectedGithubRepos"
-                class="config-option__checkbox"
-              />
-              <div class="config-option__content">
-                <div class="config-option__name">{{ repo.fullName }}</div>
-                <div class="config-option__desc">{{ repo.description || '暂无描述' }}</div>
-              </div>
-            </label>
-          </div>
-
-          <div v-else class="config-step__empty">
-            <p class="text-sm text-ink-muted mb-2">暂无已分析的仓库</p>
-            <button class="text-sm text-primary hover:underline" @click="handleGoToAnalysis">去分析 →</button>
           </div>
         </div>
       </div>

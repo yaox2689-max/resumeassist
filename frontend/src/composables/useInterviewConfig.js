@@ -8,8 +8,6 @@ export function useInterviewConfig() {
 
   const resumes = ref([])
   const resumesLoading = ref(false)
-  const githubRepos = ref([])
-  const reposLoading = ref(false)
   const starting = ref(false)
 
   const interviewTypes = [
@@ -20,25 +18,10 @@ export function useInterviewConfig() {
 
   const selectedResume = ref(null)
   const selectedType = ref('comprehensive')
-  const selectedGithubRepos = ref([])
 
   const isConfigValid = computed(() => {
     return selectedResume.value !== null && selectedType.value !== null
   })
-
-  // Load GitHub repos from API
-  async function loadGithubRepos() {
-    reposLoading.value = true
-    try {
-      const data = await api.getGithubRepos()
-      githubRepos.value = data
-    } catch (e) {
-      console.error('Failed to load GitHub repos:', e)
-      githubRepos.value = []
-    } finally {
-      reposLoading.value = false
-    }
-  }
 
   // Load resumes from API
   async function loadResumes() {
@@ -57,7 +40,6 @@ export function useInterviewConfig() {
   // Load on mount
   onMounted(() => {
     loadResumes()
-    loadGithubRepos()
   })
 
   async function handleStartInterview() {
@@ -70,7 +52,6 @@ export function useInterviewConfig() {
         profileId,
         mode: 'text',
         resumeId: selectedResume.value,
-        githubRepoIds: selectedGithubRepos.value,
       })
       router.push(`/interview/${result.session_id}?type=${selectedType.value}`)
     } catch (e) {
@@ -85,16 +66,9 @@ export function useInterviewConfig() {
     router.push('/analysis/resume')
   }
 
-  function handleGoToAnalysis() {
-    router.push('/analysis/github')
-  }
-
   return {
     resumes,
     resumesLoading,
-    githubRepos,
-    reposLoading,
-    selectedGithubRepos,
     interviewTypes,
     selectedResume,
     selectedType,
@@ -102,8 +76,6 @@ export function useInterviewConfig() {
     starting,
     handleStartInterview,
     handleGoToUpload,
-    handleGoToAnalysis,
     loadResumes,
-    loadGithubRepos,
   }
 }

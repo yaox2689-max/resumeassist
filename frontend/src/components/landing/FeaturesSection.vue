@@ -5,14 +5,6 @@ const router = useRouter()
 
 const features = [
   {
-    title: 'GitHub 源码分析',
-    desc: '粘贴你的 GitHub 仓库链接，Capy 会深入分析代码结构、技术栈和项目亮点，自动生成针对性的面试问题和回答话术。',
-    tag: '支持主流语言和框架',
-    route: '/analysis/github',
-    iconWrapBg: 'linear-gradient(135deg, #f0e6dc, #e8ddd1)',
-    iconStroke: '#C4956A',
-  },
-  {
     title: 'JD 智能分析',
     desc: '粘贴职位描述，Capy 会拆解岗位核心要求、隐含期望和匹配度评估，帮你判断是否值得投递，以及如何针对性准备。',
     tag: '关键词匹配 + 评估报告',
@@ -50,7 +42,7 @@ const features = [
       </div>
 
       <!-- Cards grid -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
         <div
           v-for="(f, i) in features"
           :key="i"
