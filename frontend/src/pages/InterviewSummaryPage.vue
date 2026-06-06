@@ -67,7 +67,56 @@ async function handleRegenerateSummary() {
 onMounted(loadSession)
 
 function handleDownloadSummary() {
-  alert('下载功能待实现')
+  if (!summary.value) return
+
+  const s = summary.value
+  const date = new Date().toLocaleDateString('zh-CN')
+  let md = `# 面试总结报告\n\n`
+  md += `**生成日期**: ${date}\n\n`
+  md += `---\n\n`
+
+  if (s.overview) {
+    md += `## 面试概览\n\n${s.overview}\n\n`
+  }
+  if (s.technical_assessment) {
+    md += `## 技术评估\n\n${s.technical_assessment}\n\n`
+  }
+  if (s.behavioral_assessment) {
+    md += `## 行为评估\n\n${s.behavioral_assessment}\n\n`
+  }
+  if (s.highlights && s.highlights.length > 0) {
+    md += `## 回答亮点\n\n`
+    s.highlights.forEach((h) => { md += `- ${h}\n` })
+    md += '\n'
+  }
+  if (s.improvements && s.improvements.length > 0) {
+    md += `## 改进建议\n\n`
+    s.improvements.forEach((i) => { md += `- ${i}\n` })
+    md += '\n'
+  } else if (s.suggestions && s.suggestions.length > 0) {
+    md += `## 改进建议\n\n`
+    s.suggestions.forEach((i) => { md += `- ${i}\n` })
+    md += '\n'
+  }
+
+  // Include conversation history
+  if (messages.value.length > 0) {
+    md += `---\n## 对话记录\n\n`
+    messages.value.forEach((msg) => {
+      const role = msg.role === 'user' ? '候选人' : '面试官'
+      md += `**${role}**: ${msg.content}\n\n`
+    })
+  }
+
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `面试总结_${sessionId.slice(0, 8)}_${date.replace(/\//g, '-')}.md`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 function handleBackToList() {

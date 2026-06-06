@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from agent.context.skill_loader import SkillLoader
 from agent.factory import AgentFactory
 from agent.profile_loader import ProfileLoader
+from api.auth import router as auth_router
 from api.chat import router as sse_router
 from api.github_analysis import router as analysis_router
 from api.jd_analysis import router as jd_router
@@ -77,6 +78,7 @@ app = FastAPI(
 )
 
 # Include routers
+app.include_router(auth_router, prefix="/api")
 app.include_router(api_router, prefix="/api")
 app.include_router(sse_router, prefix="/api")
 app.include_router(tasks_router, prefix="/api")

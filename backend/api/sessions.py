@@ -6,6 +6,7 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from api.auth import User, get_optional_user
 from api.schemas import (
     CreateSessionRequest,
     CreateSessionResponse,
@@ -48,9 +49,15 @@ def get_session_service(
 async def create_session(
     request: CreateSessionRequest,
     session_service: SessionService = Depends(get_session_service),
+    current_user: User | None = Depends(get_optional_user),
 ):
     """Create a new interview session."""
     try:
+        # Use authenticated user's ID if available
+        if current_user:
+            request.user_id = current_user.id
+        elif not request.user_id:
+            request.user_id = "default"
         return await session_service.create_session(request)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -66,8 +73,12 @@ async def list_sessions(
     limit: int = 50,
     offset: int = 0,
     session_service: SessionService = Depends(get_session_service),
+    current_user: User | None = Depends(get_optional_user),
 ):
     """List sessions with filtering and sorting."""
+    # Default to authenticated user if no user_id specified
+    if not user_id and current_user:
+        user_id = current_user.id
     return await session_service.list_sessions(
         user_id=user_id,
         status=status,

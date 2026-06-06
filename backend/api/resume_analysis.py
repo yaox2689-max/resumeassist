@@ -7,10 +7,11 @@ import os
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from api.auth import User, get_optional_user
 from agent.llm.factory import LLMFactory
 from agent.llm.providers.openai_compatible import build_multimodal_message
 from agent.profile_loader import ProfileLoader
@@ -59,8 +60,15 @@ class ResumeDetailResponse(BaseModel):
 
 
 @router.post("/resumes/upload")
-async def upload_resume(file: UploadFile, user_id: str = "default"):
+async def upload_resume(
+    file: UploadFile,
+    user_id: str = "default",
+    current_user: User | None = Depends(get_optional_user),
+):
     """Upload a resume file (PDF, PNG, JPG)."""
+    # Use authenticated user if available
+    if current_user:
+        user_id = current_user.id
     # Validate content type
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
@@ -114,8 +122,14 @@ async def upload_resume(file: UploadFile, user_id: str = "default"):
 
 
 @router.get("/resumes")
-async def list_resumes(user_id: str = "default"):
+async def list_resumes(
+    user_id: str = "default",
+    current_user: User | None = Depends(get_optional_user),
+):
     """List all resumes for a user."""
+    # Use authenticated user if available
+    if current_user:
+        user_id = current_user.id
     async with async_session_factory() as db:
         result = await db.execute(
             select(Resume)

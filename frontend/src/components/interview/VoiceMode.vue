@@ -129,7 +129,7 @@ watch(() => props.paused, (paused) => {
 
 onMounted(() => {
   if (!supported) {
-    voice.hintText = '当前浏览器不支持语音面试，请使用 Chrome 并允许麦克风权限'
+    voice.hintText = '当前浏览器不支持语音面试，请使用 Chrome/Firefox/Edge 并允许麦克风权限'
     return
   }
   if (props.autoStart) {

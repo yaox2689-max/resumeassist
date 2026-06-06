@@ -2,8 +2,10 @@
 import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { useScrollState } from '@/composables/useScrollState.js'
+import { useAuth } from '@/stores/auth.js'
 
 const { scrolled } = useScrollState()
+const { isLoggedIn, getUser, logout } = useAuth()
 </script>
 
 <template>
@@ -32,13 +34,37 @@ const { scrolled } = useScrollState()
       <!-- Right actions -->
       <div class="flex items-center gap-3">
         <ThemeToggle />
-        <router-link
-          to="/interview"
-          class="inline-flex items-center text-sm font-medium rounded-full transition-all hover:-translate-y-px no-underline"
-          style="padding: 0.5rem 1.25rem; background: var(--color-ink); color: var(--color-white);"
-        >
-          开始使用
-        </router-link>
+        <template v-if="isLoggedIn()">
+          <span class="text-sm text-ink-muted hidden sm:inline">{{ getUser()?.username }}</span>
+          <router-link
+            to="/interview"
+            class="inline-flex items-center text-sm font-medium rounded-full transition-all hover:-translate-y-px no-underline"
+            style="padding: 0.5rem 1.25rem; background: var(--color-ink); color: var(--color-white);"
+          >
+            控制台
+          </router-link>
+          <button
+            class="text-sm text-ink-muted hover:text-ink transition-colors"
+            @click="logout()"
+          >
+            退出
+          </button>
+        </template>
+        <template v-else>
+          <router-link
+            to="/login"
+            class="text-sm font-medium text-ink-muted hover:text-ink transition-colors no-underline"
+          >
+            登录
+          </router-link>
+          <router-link
+            to="/register"
+            class="inline-flex items-center text-sm font-medium rounded-full transition-all hover:-translate-y-px no-underline"
+            style="padding: 0.5rem 1.25rem; background: var(--color-ink); color: var(--color-white);"
+          >
+            注册
+          </router-link>
+        </template>
       </div>
     </div>
   </nav>

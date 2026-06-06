@@ -1,9 +1,12 @@
 import { ref, reactive } from 'vue'
 import { api } from '@/api/index.js'
+import { useAuth } from '@/stores/auth.js'
 import { eventsToTranscriptEntries, lastTranscriptEntry } from '@/utils/interviewHelpers.js'
 import { PcmPlayer, PcmStreamCapture } from '@/utils/voiceAudio.js'
 
-export function useVoiceInterview({ sessionId, profileId, userId = 'default' }) {
+export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) {
+  const { isLoggedIn, getUser } = useAuth()
+  const userId = propUserId || (isLoggedIn() ? getUser()?.user_id : 'default')
   const connected = ref(false)
   const connecting = ref(false)
   const error = ref(null)

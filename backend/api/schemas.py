@@ -68,7 +68,7 @@ class CreateSessionRequest(BaseModel):
     mode: str = "text"
     resume_id: str | None = None
     github_repo_ids: list[str] = Field(default_factory=list)
-    user_id: str = "default"
+    user_id: str | None = None  # Overridden by auth token if available
 
 
 class CreateSessionResponse(BaseModel):

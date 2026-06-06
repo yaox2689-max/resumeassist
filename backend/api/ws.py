@@ -8,6 +8,7 @@ from pydantic import BaseModel, ValidationError
 
 from agent.factory import AgentFactory, RealtimeNotConfigured
 from agent.loop import CancelToken
+from api.auth import decode_token
 from api.chat import _load_session_context
 from api.schemas import EventType, FrontendEvent
 from storage.session.store import SessionStore
@@ -44,7 +45,7 @@ async def voice_websocket(
 ):
     """WebSocket endpoint for voice mode.
 
-    Query params: profile (default: interviewer-technical), user_id (default: default), mode (default: voice)
+    Query params: profile (default: interviewer-technical), user_id (default: default), mode (default: voice), token (JWT for auth)
 
     For text mode, use SSE endpoints:
     - POST /api/sessions/{id}/messages
@@ -56,8 +57,19 @@ async def voice_websocket(
     session_store: SessionStore = websocket.app.state.session_store
 
     profile_id = websocket.query_params.get("profile", "interviewer-technical")
-    user_id = websocket.query_params.get("user_id", "default")
     mode = websocket.query_params.get("mode", "voice")
+
+    # Resolve user_id: try JWT token first, fall back to query param
+    token = websocket.query_params.get("token", "")
+    user_id = websocket.query_params.get("user_id", "default")
+    if token:
+        try:
+            payload = decode_token(token)
+            token_user_id = payload.get("user_id")
+            if token_user_id:
+                user_id = token_user_id
+        except Exception:
+            pass  # Fall back to query param user_id
 
     if mode == "voice":
         await _handle_voice_mode(websocket, agent_factory, session_store, session_id, profile_id, user_id)

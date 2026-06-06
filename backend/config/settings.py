@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     # Resume storage
     RESUME_ROOT: str = "data/resumes"
 
+    # JWT Auth
+    JWT_SECRET: str = "capymock-jwt-secret-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+
     # Repo analysis & memory
     REPO_ROOT: str = "storage/repo"
     MEMORY_ROOT: str = "storage/memory"

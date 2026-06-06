@@ -4,6 +4,16 @@
  */
 
 import { mockAdapter } from './mock.js'
+import { useAuth } from '@/stores/auth.js'
+
+function getAuthHeaders() {
+  const { getToken } = useAuth()
+  const token = getToken()
+  if (token) {
+    return { 'Authorization': `Bearer ${token}` }
+  }
+  return {}
+}
 
 // Mock adapter for non-GitHub endpoints
 async function mockRequest(path, options = {}) {
@@ -13,10 +23,22 @@ async function mockRequest(path, options = {}) {
 
 // Real API call to FastAPI backend
 async function realRequest(path, options = {}) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...getAuthHeaders(),
+    ...options.headers,
+  }
   const res = await fetch(`/api${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers,
   })
+  if (res.status === 401) {
+    // Token expired or invalid — clear auth
+    const { logout } = useAuth()
+    logout()
+    window.location.href = '/login'
+    throw new Error('登录已过期，请重新登录')
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     const detail = body?.detail || `API error: ${res.status}`
@@ -28,6 +50,25 @@ async function realRequest(path, options = {}) {
 }
 
 export const api = {
+  // Auth
+  register(username, password) {
+    return realRequest('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    })
+  },
+
+  login(username, password) {
+    return realRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    })
+  },
+
+  getMe() {
+    return realRequest('/auth/me')
+  },
+
   // GitHub analysis (real backend)
   analyzeGithub(url) {
     return realRequest('/analysis', {
@@ -66,21 +107,26 @@ export const api = {
   },
 
   // Resume CRUD (real backend)
-  getResumes(userId = 'default') {
-    return realRequest(`/resumes?user_id=${encodeURIComponent(userId)}`)
+  getResumes(userId) {
+    const params = userId ? `?user_id=${encodeURIComponent(userId)}` : ''
+    return realRequest(`/resumes${params}`)
   },
 
   getResume(resumeId) {
     return realRequest(`/resumes/${resumeId}`)
   },
 
-  async uploadResume(file, userId = 'default') {
+  async uploadResume(file, userId) {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('user_id', userId)
+    if (userId) formData.append('user_id', userId)
+    const { getToken } = useAuth()
+    const token = getToken()
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
     const res = await fetch('/api/resumes/upload', {
       method: 'POST',
       body: formData,
+      headers,
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: `Upload failed: ${res.status}` }))
@@ -112,11 +158,13 @@ export const api = {
     })
   },
 
-  getSessions({ userId = 'default', status = null, profileId = null } = {}) {
-    const params = new URLSearchParams({ user_id: userId })
+  getSessions({ userId = null, status = null, profileId = null } = {}) {
+    const params = new URLSearchParams()
+    if (userId) params.set('user_id', userId)
     if (status) params.set('status', status)
     if (profileId) params.set('profile_id', profileId)
-    return realRequest(`/sessions?${params.toString()}`)
+    const qs = params.toString()
+    return realRequest(`/sessions${qs ? `?${qs}` : ''}`)
   },
 
   getSession(sessionId) {
@@ -148,12 +196,15 @@ export const api = {
     return realRequest(`/sessions/${sessionId}`, { method: 'DELETE' })
   },
 
-  getVoiceWebSocketUrl(sessionId, { profileId, userId = 'default', mode = 'voice' } = {}) {
+  getVoiceWebSocketUrl(sessionId, { profileId, userId, mode = 'voice' } = {}) {
     const params = new URLSearchParams({
       profile: profileId,
-      user_id: userId,
       mode,
     })
+    if (userId) params.set('user_id', userId)
+    const { getToken } = useAuth()
+    const token = getToken()
+    if (token) params.set('token', token)
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     return `${protocol}//${window.location.host}/ws/voice/${sessionId}?${params.toString()}`
   },

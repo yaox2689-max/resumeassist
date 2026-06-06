@@ -1,13 +1,16 @@
 <script setup>
 import { ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { useScrollState } from '@/composables/useScrollState.js'
+import { useAuth } from '@/stores/auth.js'
 
 const route = useRoute()
+const router = useRouter()
 const { scrolled } = useScrollState()
 const sidebarOpen = ref(false)
+const { isLoggedIn, getUser, logout } = useAuth()
 
 const links = [
   { to: '/analysis/github', label: 'GitHub 源码分析', icon: 'github' },
@@ -125,6 +128,23 @@ const bottomLinks = [
           </svg>
           {{ link.label }}
         </router-link>
+
+        <!-- User info & logout -->
+        <div v-if="isLoggedIn()" class="mt-3 pt-3" style="border-top: 1px solid var(--color-border-light)">
+          <div class="px-3 py-2 text-xs font-medium" style="color: var(--color-ink-muted);">
+            {{ getUser()?.username }}
+          </div>
+          <button
+            class="flex items-center gap-3 w-full rounded-xl text-sm font-medium transition-all text-ink-light hover:bg-surface-alt"
+            style="padding: 0.75rem 1rem"
+            @click="logout(); router.push('/')"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M7 2H3a1 1 0 00-1 1v12a1 1 0 001 1h4M11 13l4-4-4-4M15 9H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            退出登录
+          </button>
+        </div>
       </div>
     </aside>
 

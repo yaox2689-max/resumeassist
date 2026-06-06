@@ -38,6 +38,9 @@ export function pcm16Base64ToFloat32(b64) {
   return float32
 }
 
+/** Cross-browser AudioContext constructor. */
+const AudioCtx = window.AudioContext || window.webkitAudioContext
+
 export class PcmPlayer {
   constructor(sampleRate) {
     this.sampleRate = sampleRate
@@ -48,7 +51,7 @@ export class PcmPlayer {
 
   _ensureContext() {
     if (!this.ctx) {
-      this.ctx = new AudioContext()
+      this.ctx = new AudioCtx()
       this.nextTime = this.ctx.currentTime
     }
     if (this.ctx.state === 'suspended') {
@@ -118,7 +121,7 @@ export class PcmStreamCapture {
         noiseSuppression: true,
       },
     })
-    this.audioContext = new AudioContext()
+    this.audioContext = new AudioCtx()
     this.source = this.audioContext.createMediaStreamSource(this.stream)
     this.processor = this.audioContext.createScriptProcessor(4096, 1, 1)
     this.silentGain = this.audioContext.createGain()
@@ -156,10 +159,11 @@ export class PcmStreamCapture {
 }
 
 export function isVoiceSupported() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext
   return (
     typeof window !== 'undefined'
     && !!window.WebSocket
     && !!navigator.mediaDevices?.getUserMedia
-    && typeof AudioContext !== 'undefined'
+    && typeof AudioCtx !== 'undefined'
   )
 }
