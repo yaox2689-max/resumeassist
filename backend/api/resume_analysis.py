@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+import re
 import uuid
 from pathlib import Path
 
@@ -254,19 +256,62 @@ async def analyze_resume(resume_id: str, force: bool = False):
         user_msg,
     ]
 
-    llm_result = await llm.chat(messages)
+    # Call LLM with retry + timeout
+    last_error: Exception | None = None
+    data: dict | None = None
+    LLM_TIMEOUT = 60
+    MAX_RETRIES = 2
 
-    if llm_result.error:
-        raise HTTPException(502, f"LLM error: {llm_result.error}")
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            llm_result = await asyncio.wait_for(llm.chat(messages), timeout=LLM_TIMEOUT)
+        except asyncio.TimeoutError:
+            last_error = TimeoutError(f"LLM timed out after {LLM_TIMEOUT}s (attempt {attempt})")
+            continue
+        except Exception as e:
+            last_error = e
+            if attempt < MAX_RETRIES:
+                await asyncio.sleep(1)
+            continue
 
-    if not llm_result.text:
-        raise HTTPException(502, "LLM returned empty response")
+        if llm_result.error:
+            last_error = RuntimeError(llm_result.error)
+            if attempt < MAX_RETRIES:
+                await asyncio.sleep(1)
+            continue
 
-    # Parse JSON
-    try:
-        data = json.loads(llm_result.text)
-    except json.JSONDecodeError:
-        raise HTTPException(500, f"LLM returned invalid JSON: {llm_result.text[:200]}")
+        if not llm_result.text:
+            last_error = RuntimeError("LLM returned empty response")
+            if attempt < MAX_RETRIES:
+                await asyncio.sleep(1)
+            continue
+
+        # Parse JSON (with fence-stripping fallback)
+        raw = llm_result.text.strip()
+        try:
+            data = json.loads(raw)
+            break
+        except json.JSONDecodeError:
+            fence_match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", raw, re.DOTALL)
+            if fence_match:
+                try:
+                    data = json.loads(fence_match.group(1))
+                    break
+                except json.JSONDecodeError:
+                    pass
+            brace = re.search(r"\{.*\}", raw, re.DOTALL)
+            if brace:
+                try:
+                    data = json.loads(brace.group())
+                    break
+                except json.JSONDecodeError:
+                    pass
+            last_error = RuntimeError(f"LLM returned invalid JSON (attempt {attempt}): {raw[:200]}")
+            if attempt < MAX_RETRIES:
+                await asyncio.sleep(1)
+
+    if data is None:
+        raise HTTPException(502, f"简历分析失败：{last_error}")
 
     # Cache result
     async with async_session_factory() as db:

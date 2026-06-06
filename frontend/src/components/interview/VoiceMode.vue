@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
 import { useVoiceInterview } from '@/composables/useVoiceInterview.js'
-import { isVoiceSupported } from '@/utils/voiceAudio.js'
+import { isVoiceSupported, voiceSupportReason } from '@/utils/voiceAudio.js'
 
 const props = defineProps({
   sessionId: { type: String, required: true },
@@ -14,6 +14,7 @@ const props = defineProps({
 const emit = defineEmits(['update:transcript', 'voice-started', 'voice-stopped'])
 
 const supported = isVoiceSupported()
+const unsupportedReason = supported ? '' : voiceSupportReason()
 const voiceRunning = ref(false)
 const isMuted = ref(false)
 const elapsed = ref(0)
@@ -129,7 +130,7 @@ watch(() => props.paused, (paused) => {
 
 onMounted(() => {
   if (!supported) {
-    voice.hintText = '当前浏览器不支持语音面试，请使用 Chrome/Firefox/Edge 并允许麦克风权限'
+    voice.hintText = unsupportedReason || '当前浏览器不支持语音面试，请使用 Chrome/Firefox/Edge 并允许麦克风权限'
     return
   }
   if (props.autoStart) {

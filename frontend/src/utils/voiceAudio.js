@@ -167,3 +167,13 @@ export function isVoiceSupported() {
     && typeof AudioCtx !== 'undefined'
   )
 }
+
+export function voiceSupportReason() {
+  if (typeof window === 'undefined') return '服务器端环境'
+  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return '当前页面未使用 HTTPS（麦克风权限需要 HTTPS 加密连接）'
+  }
+  if (!navigator.mediaDevices?.getUserMedia) return '浏览器不支持 getUserMedia（请使用 Chrome/Firefox/Edge）'
+  if (!(window.AudioContext || window.webkitAudioContext)) return '浏览器不支持 AudioContext'
+  return ''
+}
