@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from trace import init_tracing, is_tracing_enabled, shutdown_tracing
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from trace import init_tracing, is_tracing_enabled, shutdown_tracing
 
 from agent.context.skill_loader import SkillLoader
 from agent.factory import AgentFactory
@@ -87,8 +90,25 @@ app.include_router(jd_router, prefix="/api")
 app.include_router(resume_router, prefix="/api")
 app.include_router(ws_router)
 
+# Serve frontend static files
+FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+if FRONTEND_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="assets")
 
-@app.get("/")
-async def root():
-    """Health check endpoint."""
-    return {"status": "ok", "service": "CapyMock API"}
+    @app.get("/")
+    async def serve_frontend():
+        """Serve the frontend SPA."""
+        return FileResponse(str(FRONTEND_DIST / "index.html"))
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """Catch-all: serve index.html for SPA routes."""
+        file_path = FRONTEND_DIST / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(str(file_path))
+        return FileResponse(str(FRONTEND_DIST / "index.html"))
+else:
+    @app.get("/")
+    async def root():
+        """Health check endpoint."""
+        return {"status": "ok", "service": "CapyMock API"}
