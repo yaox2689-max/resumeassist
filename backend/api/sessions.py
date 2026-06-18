@@ -33,16 +33,15 @@ def get_session_store(request: Request) -> SessionStore:
     return request.app.state.session_store
 
 
-def get_session_service(
+async def get_session_service(
     request: Request,
     session_store: SessionStore = Depends(get_session_store),
-) -> SessionService:
+):
     """Get session service with database session."""
     from storage.db.engine import async_session_factory
 
-    # Create a new database session
-    db_session = async_session_factory()
-    return SessionService(db_session=db_session, session_store=session_store)
+    async with async_session_factory() as db_session:
+        yield SessionService(db_session=db_session, session_store=session_store)
 
 
 @router.post("/sessions", response_model=CreateSessionResponse)
@@ -225,7 +224,7 @@ async def finalize_session(
 
         # Extract memory fields from summary
         finalize_data = {
-            "capy_note": summary.pop("capy_note", ""),
+            "interview_note": summary.pop("interview_note", ""),
             "user_md": summary.pop("user_md", ""),
         }
 
@@ -298,6 +297,6 @@ def _normalize_summary_dict(parsed: dict) -> dict:
         "suggestions": parsed.get("suggestions", []),
         "technical_assessment": parsed.get("technical_assessment", ""),
         "behavioral_assessment": parsed.get("behavioral_assessment", ""),
-        "capy_note": parsed.get("capy_note", ""),
+        "interview_note": parsed.get("interview_note", ""),
         "user_md": parsed.get("user_md", ""),
     }

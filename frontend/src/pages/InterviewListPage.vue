@@ -199,7 +199,7 @@ async function handleDelete(id) {
     <LoadingOverlay
       :active="loading"
       text="正在加载"
-      subtext="Capy 正在获取面试记录..."
+      subtext="ResumeAst 正在获取面试记录..."
     />
   </AnalysisLayout>
 </template>

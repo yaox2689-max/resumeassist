@@ -1,7 +1,7 @@
 import { reactive } from 'vue'
 
-const TOKEN_KEY = 'capymock-token'
-const USER_KEY = 'capymock-user'
+const TOKEN_KEY = 'resumeast-token'
+const USER_KEY = 'resumeast-user'
 
 const state = reactive({
   token: localStorage.getItem(TOKEN_KEY) || '',

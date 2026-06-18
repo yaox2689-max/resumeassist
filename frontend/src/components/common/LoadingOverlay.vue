@@ -1,10 +1,10 @@
 <script setup>
-import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
+import AppLogo from '@/components/common/AppLogo.vue'
 
 defineProps({
   active: { type: Boolean, default: false },
   text: { type: String, default: '正在分析中' },
-  subtext: { type: String, default: 'Capy 正在处理中...' },
+  subtext: { type: String, default: 'ResumeAst 正在处理中...' },
 })
 </script>
 
@@ -25,7 +25,7 @@ defineProps({
         }"
       >
         <div class="mb-5 animate-bounce-subtle">
-          <CapybaraLogo :size="64" :stroke-width="2.5" />
+          <AppLogo :size="64" :stroke-width="2.5" />
         </div>
         <p class="text-base font-medium mb-2" style="color: var(--color-ink)">
           {{ text }}<span class="loading-dots"><span></span><span></span><span></span></span>

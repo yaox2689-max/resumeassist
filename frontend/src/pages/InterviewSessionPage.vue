@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api/index.js'
-import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
+import AppLogo from '@/components/common/AppLogo.vue'
 import TextMode from '@/components/interview/TextMode.vue'
 import VoiceMode from '@/components/interview/VoiceMode.vue'
 import { INTERVIEW_TYPES, PROFILE_TO_TYPE, TYPE_TO_PROFILE } from '@/data/interview.js'
@@ -146,7 +146,7 @@ onUnmounted(() => {
           </svg>
         </router-link>
         <div class="interview-header__title">
-          <CapybaraLogo :size="24" />
+          <AppLogo :size="24" />
           <span>{{ INTERVIEW_TYPES[interviewType] || '模拟面试' }}</span>
           <span v-if="mode === 'voice'" class="text-sm text-ink-muted">（语音模式）</span>
         </div>

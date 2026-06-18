@@ -159,7 +159,7 @@ class SessionService:
             session_id: Session ID
             summary: Summary dict to store
             memory_store: Optional MemoryStore for writing memory files
-            finalize_data: Optional dict with capy_note, user_md, real_ques for memory
+            finalize_data: Optional dict with interview_note, user_md, real_ques for memory
         """
         result = await self.db.execute(
             select(Session).where(Session.id == session_id)
@@ -227,9 +227,9 @@ class SessionService:
 
         store: MemoryStore = memory_store  # type: ignore[assignment]
 
-        capy_note = finalize_data.get("capy_note", "")
-        if capy_note:
-            store.write_capy_note(user_id, resume_id, capy_note)
+        interview_note = finalize_data.get("interview_note", "")
+        if interview_note:
+            store.write_interview_note(user_id, resume_id, interview_note)
 
         user_md = finalize_data.get("user_md", "")
         if user_md:

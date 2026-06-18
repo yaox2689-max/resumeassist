@@ -1,4 +1,4 @@
-# Backend — CapyMock API
+# Backend — ResumeAst API
 
 AI 求职助手后端，基于 FastAPI + ReAct Agent + Realtime Voice 架构。
 
@@ -231,11 +231,11 @@ POST   /api/tasks/{id}/cancel           # 取消任务
 
 ```
 <root>/<user_id>/user.md                    — 用户画像（跨简历共享）
-<root>/<user_id>/<resume_id>/CAPY_NOTE.md  — 简历级面试笔记
+<root>/<user_id>/<resume_id>/INTERVIEW_NOTE.md  — 简历级面试笔记
 <root>/<user_id>/<resume_id>/REAL_QUES.md  — 真实面试题记录
 ```
 
-面试总结生成时自动写入 `capy_note` 和 `user_md`；面试过程中 agent 可通过 `save_real_question` 工具记录用户提到的真实面试题。
+面试总结生成时自动写入 `interview_note` 和 `user_md`；面试过程中 agent 可通过 `save_real_question` 工具记录用户提到的真实面试题。
 
 ### 双层事件协议
 

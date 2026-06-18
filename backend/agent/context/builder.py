@@ -101,9 +101,9 @@ class ContextBuilder:
         if user_md:
             parts.append(f"\n\n## 用户画像\n{user_md}")
 
-        capy_note = store.read_capy_note(user_id, resume_id)
-        if capy_note:
-            parts.append(f"\n\n## 面试官记忆\n{capy_note}")
+        interview_note = store.read_interview_note(user_id, resume_id)
+        if interview_note:
+            parts.append(f"\n\n## 面试官记忆\n{interview_note}")
 
         real_ques = store.read_real_ques(user_id, resume_id)
         if real_ques:

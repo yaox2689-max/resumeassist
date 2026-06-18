@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
+import AppLogo from '@/components/common/AppLogo.vue'
 import { useVoiceInterview } from '@/composables/useVoiceInterview.js'
 import { isVoiceSupported, voiceSupportReason } from '@/utils/voiceAudio.js'
 
@@ -38,7 +38,7 @@ const formattedTime = computed(() => {
 const displayTranscript = computed(() => {
   if (voice.liveAiText) {
     return {
-      label: 'Capy（回复中...）',
+      label: 'ResumeAst（回复中...）',
       text: voice.liveAiText,
       isUser: false,
     }
@@ -156,11 +156,11 @@ onUnmounted(() => {
         <div class="voice-avatar__ring"></div>
         <div class="voice-avatar__ring voice-avatar__ring--2"></div>
         <div class="voice-avatar__face">
-          <CapybaraLogo :size="64" :stroke-width="2.5" />
+          <AppLogo :size="64" :stroke-width="2.5" />
         </div>
       </div>
 
-      <h2 class="voice-name" style="font-family: var(--font-heading)">Capy</h2>
+      <h2 class="voice-name" style="font-family: var(--font-heading)">ResumeAst</h2>
       <p class="voice-hint">{{ voice.hintText }}</p>
 
       <div class="voice-waveform" :class="voice.waveformActive || voice.isListening ? 'active' : ''">

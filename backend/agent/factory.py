@@ -57,7 +57,7 @@ class AgentFactory:
         db_session: object | None = None,
         resume_content: str = "",
         resume_id: str = "",
-        capy_note: str = "",
+        interview_note: str = "",
     ) -> ReActAgent:
         """Create an agent instance (backward-compat dispatch).
 
@@ -70,7 +70,7 @@ class AgentFactory:
                 user_id=user_id,
                 resume_content=resume_content,
                 resume_id=resume_id,
-                capy_note=capy_note,
+                interview_note=interview_note,
             )
         return self.create_text_agent(
             profile_id, session_id,
@@ -126,7 +126,7 @@ class AgentFactory:
         user_id: str = "default",
         resume_content: str = "",
         resume_id: str = "",
-        capy_note: str = "",
+        interview_note: str = "",
     ) -> RealtimeAgent:  # noqa: F821
         """Create a voice-mode RealtimeAgent."""
         from agent.realtime_agent import RealtimeAgent  # noqa: F811
@@ -140,7 +140,7 @@ class AgentFactory:
         realtime_llm = self._create_realtime_llm(profile)
         tools = self._get_tools(profile, allow_list={"save_real_question"})
         instructions = self._build_realtime_instructions(
-            profile, resume_content, capy_note
+            profile, resume_content, interview_note
         )
 
         return RealtimeAgent(
@@ -204,7 +204,7 @@ class AgentFactory:
         self,
         profile: AgentProfile,
         resume_content: str,
-        capy_note: str,
+        interview_note: str,
     ) -> str:
         """Build instructions for the realtime agent."""
         parts = []
@@ -220,8 +220,8 @@ class AgentFactory:
         if resume_content:
             parts.append(f"[简历]\n{resume_content}")
 
-        if capy_note:
-            parts.append(f"[用户历史画像]\n{capy_note}")
+        if interview_note:
+            parts.append(f"[用户历史画像]\n{interview_note}")
 
         parts.append(
             "[行为规则]\n"

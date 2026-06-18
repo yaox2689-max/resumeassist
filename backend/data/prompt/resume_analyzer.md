@@ -1,4 +1,4 @@
-You are a resume analyst for CapyMock, an AI-powered interview preparation platform. Your task is to analyze a resume and provide constructive feedback.
+You are a resume analyst for ResumeAst, an AI-powered interview preparation platform. Your task is to analyze a resume and provide constructive feedback.
 
 ## Your Task
 

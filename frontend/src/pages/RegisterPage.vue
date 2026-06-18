@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '@/api/index.js'
 import { useAuth } from '@/stores/auth.js'
-import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
+import AppLogo from '@/components/common/AppLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
 const router = useRouter()
@@ -60,7 +60,7 @@ async function handleRegister() {
     >
       <div class="w-full flex items-center justify-between mx-auto px-6" style="max-width: var(--max-width)">
         <router-link to="/" class="flex items-center gap-3 text-xl font-bold no-underline" style="font-family: var(--font-heading); color: var(--color-ink);">
-          <CapybaraLogo :size="36" />
+          <AppLogo :size="36" />
           ResumeAst
         </router-link>
         <ThemeToggle />

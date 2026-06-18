@@ -26,7 +26,7 @@
           class="mb-8 max-w-[480px] mx-auto lg:mx-0 animate-hero-fade-up"
           style="font-size: var(--text-lg); color: var(--color-ink-light); line-height: var(--leading-relaxed); animation-delay: 0.35s"
         >
-          从源码分析到模拟面试，CapyMock 用 AI 帮你拆解每一个求职环节。
+          从源码分析到模拟面试，ResumeAst 用 AI 帮你拆解每一个求职环节。
           像有位耐心的朋友陪你准备，而不是冰冷的工具。
         </p>
 
@@ -42,7 +42,7 @@
 
       <!-- Illustration -->
       <div class="flex justify-center items-center animate-hero-fade-scale" style="animation-delay: 0.3s">
-        <img src="@/assets/放大镜capy.png" alt="Hero Illustration" class="w-full max-w-md">
+        <img src="@/assets/放大镜.png" alt="Hero Illustration" class="w-full max-w-md">
         
       </div>
     </div>

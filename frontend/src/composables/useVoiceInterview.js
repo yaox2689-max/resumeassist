@@ -114,7 +114,7 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
       case 'assistant.transcript.done': {
         const text = data.payload?.text || liveAiText.value
         liveAiText.value = ''
-        appendTranscript('Capy', text)
+        appendTranscript('ResumeAst', text)
         avatarSpeaking.value = false
         break
       }

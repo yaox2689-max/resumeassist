@@ -46,7 +46,7 @@ function retry() {
         </div>
         <div>
           <h2 class="text-xl font-bold">粘贴职位描述 (JD)</h2>
-          <p class="text-sm text-ink-muted">Capy 将拆解核心要求、隐含期望和潜在雷点</p>
+          <p class="text-sm text-ink-muted">ResumeAst 将拆解核心要求、隐含期望和潜在雷点</p>
         </div>
       </div>
 
@@ -130,7 +130,7 @@ function retry() {
     <LoadingOverlay
       :active="loading"
       text="正在分析职位描述"
-      subtext="Capy 正在拆解岗位要求..."
+      subtext="ResumeAst 正在拆解岗位要求..."
     />
   </AnalysisLayout>
 </template>

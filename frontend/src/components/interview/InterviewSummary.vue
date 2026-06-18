@@ -1,5 +1,5 @@
 <script setup>
-import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
+import AppLogo from '@/components/common/AppLogo.vue'
 import { renderMarkdown } from '@/utils/renderMarkdown.js'
 import { INTERVIEW_TYPES } from '@/data/interview.js'
 
@@ -56,8 +56,8 @@ const isBackendFormat = typeof props.summary.overview === 'string'
             :class="msg.role === 'user' ? 'chat-bubble--user' : 'chat-bubble--ai'"
           >
             <div v-if="msg.role === 'ai'" class="bubble-header">
-              <CapybaraLogo :size="14" :stroke-width="2" />
-              <span>Capy</span>
+              <AppLogo :size="14" :stroke-width="2" />
+              <span>ResumeAst</span>
             </div>
             <template v-if="msg.role === 'ai'">
               <div v-html="renderMarkdown(msg.content)"></div>

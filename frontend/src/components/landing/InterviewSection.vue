@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
+import AppLogo from '@/components/common/AppLogo.vue'
 
 const router = useRouter()
 </script>
@@ -19,7 +19,7 @@ const router = useRouter()
         </div>
         <h2 class="text-3xl lg:text-5xl font-bold mb-4" style="font-family: var(--font-heading)">两种模式，随时开练</h2>
         <p class="text-lg mx-auto" style="color: var(--color-ink-light); max-width: 560px; line-height: var(--leading-relaxed)">
-          Capy 会结合你的简历和目标岗位进行个性化提问，像真实面试一样自然
+          ResumeAst 会结合你的简历和目标岗位进行个性化提问，像真实面试一样自然
         </p>
       </div>
 
@@ -45,7 +45,7 @@ const router = useRouter()
 
           <h3 class="text-2xl font-bold mb-3" style="font-family: var(--font-heading)">文字模拟面试</h3>
           <p class="text-sm mb-8" style="color: var(--color-ink-light); line-height: var(--leading-relaxed)">
-            以对话形式进行，Capy 面试官会根据你的回答深入追问。
+            以对话形式进行，ResumeAst 面试官会根据你的回答深入追问。
             适合喜欢思考后再回答的候选人，可以反复推敲每个回答。
           </p>
 
@@ -94,7 +94,7 @@ const router = useRouter()
           <h3 class="text-2xl font-bold mb-3" style="font-family: var(--font-heading)">语音模拟面试</h3>
           <p class="text-sm mb-8" style="color: var(--color-ink-light); line-height: var(--leading-relaxed)">
             用语音实时对话，更接近真实面试场景。
-            Capy 面试官会分析你的语速、表达流畅度，训练临场应变能力。
+            ResumeAst 面试官会分析你的语速、表达流畅度，训练临场应变能力。
           </p>
 
           <!-- Voice preview -->
@@ -103,7 +103,7 @@ const router = useRouter()
             <div class="flex flex-col items-center gap-4">
               <!-- Avatar -->
               <div class="w-14 h-14 rounded-full flex items-center justify-center relative" style="background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary))">
-                <CapybaraLogo :size="28" color="white" :stroke-width="2" />
+                <ResumeAstbaraLogo :size="28" color="white" :stroke-width="2" />
               </div>
 
               <!-- Wave bars -->
@@ -111,7 +111,7 @@ const router = useRouter()
                 <span v-for="n in 7" :key="n" class="rounded-sm animate-wave-bar" :style="{ width: '3px', background: 'var(--color-primary)', animationDelay: `${(n-1) * 0.1}s`, height: [8, 16, 24, 16, 8, 20, 12][n-1] + 'px' }"></span>
               </div>
 
-              <p class="text-sm" style="color: var(--color-ink-muted)">Capy 面试官正在聆听...</p>
+              <p class="text-sm" style="color: var(--color-ink-muted)">ResumeAst 面试官正在聆听...</p>
             </div>
           </div>
         </div>

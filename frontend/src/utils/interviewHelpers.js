@@ -3,7 +3,7 @@
  * Shared between TextMode, VoiceMode and InterviewSummaryPage.
  *
  * @param {object} opts - shape: { role:'role', content:'content' } for messages
- *                        or { role:'label', content:'text', userLabel:'你', aiLabel:'Capy' } for transcript
+ *                        or { role:'label', content:'text', userLabel:'你', aiLabel:'ResumeAst' } for transcript
  */
 function _extractTurns(events, { role = 'role', content = 'content', userLabel = 'user', aiLabel = 'ai' } = {}) {
   const result = []
@@ -26,7 +26,7 @@ export function eventsToMessages(events) {
 
 /** Convert session events to voice transcript entries ({ label, text }). */
 export function eventsToTranscriptEntries(events) {
-  return _extractTurns(events, { role: 'label', content: 'text', userLabel: '你', aiLabel: 'Capy' })
+  return _extractTurns(events, { role: 'label', content: 'text', userLabel: '你', aiLabel: 'ResumeAst' })
 }
 
 /** Last conversational turn for compact voice UI (user answer or assistant question). */

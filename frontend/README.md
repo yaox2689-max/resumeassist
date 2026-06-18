@@ -1,4 +1,4 @@
-# Frontend — CapyMock
+# Frontend — ResumeAst
 
 AI 求职助手前端，基于 Vue 3 + Vite + Tailwind CSS。
 
@@ -38,7 +38,7 @@ src/
 │       └── GitHubDeepPage.vue      # 深度分析（代码片段、目录树）
 ├── components/
 │   ├── common/                 # 通用组件
-│   │   ├── CapybaraLogo.vue        # 水豚 Logo
+│   │   ├── AppLogo.vue             # 应用 Logo
 │   │   ├── FileUploadZone.vue      # 拖拽上传
 │   │   ├── LoadingOverlay.vue      # 全屏加载
 │   │   ├── ResultsHeader.vue       # 结果页头部

@@ -33,14 +33,14 @@ class TestLayeredPaths:
         assert content == "# User profile\n偏好：中文面试"
         assert (memory_root / "user-1" / "user.md").exists()
 
-    def test_capy_note_at_resume_level(
+    def test_interview_note_at_resume_level(
         self, store: MemoryStore, memory_root: Path
     ) -> None:
-        """CAPY_NOTE.md is stored at <user_id>/<resume_id>/CAPY_NOTE.md."""
-        store.write_capy_note("user-1", "res-1", "# 强弱项\n弱项：系统设计")
-        content = store.read_capy_note("user-1", "res-1")
+        """INTERVIEW_NOTE.md is stored at <user_id>/<resume_id>/INTERVIEW_NOTE.md."""
+        store.write_interview_note("user-1", "res-1", "# 强弱项\n弱项：系统设计")
+        content = store.read_interview_note("user-1", "res-1")
         assert content == "# 强弱项\n弱项：系统设计"
-        assert (memory_root / "user-1" / "res-1" / "CAPY_NOTE.md").exists()
+        assert (memory_root / "user-1" / "res-1" / "INTERVIEW_NOTE.md").exists()
 
     def test_real_ques_at_resume_level(
         self, store: MemoryStore, memory_root: Path
@@ -56,7 +56,7 @@ class TestLayeredPaths:
     ) -> None:
         """Reading non-existent memory returns empty string."""
         assert store.read_user("no-user") == ""
-        assert store.read_capy_note("no-user", "no-res") == ""
+        assert store.read_interview_note("no-user", "no-res") == ""
         assert store.read_real_ques("no-user", "no-res") == ""
 
     def test_user_shared_across_resumes(
@@ -67,18 +67,18 @@ class TestLayeredPaths:
         # Read with different resume_ids — both see the same user.md
         assert store.read_user("user-1") == "profile content"
 
-    def test_capy_note_per_resume(
+    def test_interview_note_per_resume(
         self, store: MemoryStore
     ) -> None:
-        """Different resumes have separate CAPY_NOTE.md files."""
-        store.write_capy_note("user-1", "res-1", "note for res-1")
-        store.write_capy_note("user-1", "res-2", "note for res-2")
-        assert store.read_capy_note("user-1", "res-1") == "note for res-1"
-        assert store.read_capy_note("user-1", "res-2") == "note for res-2"
+        """Different resumes have separate INTERVIEW_NOTE.md files."""
+        store.write_interview_note("user-1", "res-1", "note for res-1")
+        store.write_interview_note("user-1", "res-2", "note for res-2")
+        assert store.read_interview_note("user-1", "res-1") == "note for res-1"
+        assert store.read_interview_note("user-1", "res-2") == "note for res-2"
 
 
 class TestRewriteMerge:
-    """Test rewrite-merge semantics for CAPY_NOTE.md."""
+    """Test rewrite-merge semantics for INTERVIEW_NOTE.md."""
 
     async def test_merge_removes_improved_weakness(
         self, store: MemoryStore
@@ -90,12 +90,12 @@ class TestRewriteMerge:
         old_note = "# 强弱项\n## 弱项\n- 系统设计：概念不清\n- 算法：慢"
         new_facts = ["系统设计已练习，表现良好"]
 
-        merged = await store.merge_capy_note(
+        merged = await store.merge_interview_note(
             "user-1", "res-1", old_note, new_facts, llm_merge_fn=fake_merge_fn
         )
 
         # Merged content is persisted and contains both old and new content
-        persisted = store.read_capy_note("user-1", "res-1")
+        persisted = store.read_interview_note("user-1", "res-1")
         assert persisted == merged
         assert "系统设计" in merged  # still present (fake fn appends, doesn't remove)
         assert "新增" in merged  # new section added
@@ -107,7 +107,7 @@ class TestRewriteMerge:
         old_note = "# 强弱项\n## 强项\n- Python 熟练"
         new_facts = ["Redis 缓存策略答得好"]
 
-        merged = await store.merge_capy_note(
+        merged = await store.merge_interview_note(
             "user-1", "res-1", old_note, new_facts, llm_merge_fn=fake_merge_fn
         )
 
@@ -119,7 +119,7 @@ class TestRewriteMerge:
         """Merge with empty old note creates new content."""
         new_facts = ["第一次面试"]
 
-        merged = await store.merge_capy_note(
+        merged = await store.merge_interview_note(
             "user-1", "res-1", "", new_facts, llm_merge_fn=fake_merge_fn
         )
 

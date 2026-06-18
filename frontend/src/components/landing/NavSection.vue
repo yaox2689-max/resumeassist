@@ -1,5 +1,5 @@
 <script setup>
-import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
+import AppLogo from '@/components/common/AppLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { useScrollState } from '@/composables/useScrollState.js'
 import { useAuth } from '@/stores/auth.js'
@@ -17,7 +17,7 @@ const { isLoggedIn, getUser, logout } = useAuth()
     <div class="w-full flex items-center justify-between mx-auto px-6" style="max-width: var(--max-width)">
       <!-- Logo -->
       <router-link to="/" class="flex items-center gap-3 text-xl font-bold" style="font-family: var(--font-heading); color: var(--color-ink);">
-        <CapybaraLogo :size="36" />
+        <AppLogo :size="36" />
         ResumeAst
       </router-link>
 

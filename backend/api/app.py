@@ -73,7 +73,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="CapyMock API",
+    title="ResumeAst API",
     description="AI Interview Preparation Backend",
     version="0.1.0",
     lifespan=lifespan,
@@ -109,4 +109,4 @@ else:
     @app.get("/")
     async def root():
         """Health check endpoint."""
-        return {"status": "ok", "service": "CapyMock API"}
+        return {"status": "ok", "service": "ResumeAst API"}

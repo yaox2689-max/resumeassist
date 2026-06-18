@@ -91,7 +91,7 @@ class TestContextBuilderInjection:
             "# User prefs\nChinese interview", encoding="utf-8"
         )
         (root / "user-1" / "res-1").mkdir()
-        (root / "user-1" / "res-1" / "CAPY_NOTE.md").write_text(
+        (root / "user-1" / "res-1" / "INTERVIEW_NOTE.md").write_text(
             "# Notes\nStrength: Python", encoding="utf-8"
         )
         (root / "user-1" / "res-1" / "REAL_QUES.md").write_text(
@@ -134,7 +134,7 @@ class TestContextBuilderInjection:
         system_msg = messages[0]["content"]
         assert "Python developer" in system_msg
         assert "Chinese interview" in system_msg
-        assert "Python" in system_msg  # from CAPY_NOTE
+        assert "Python" in system_msg  # from INTERVIEW_NOTE
         assert "rate limiting" in system_msg  # from REAL_QUES
 
     def test_cold_start_no_memory(self, tmp_path: Path) -> None:

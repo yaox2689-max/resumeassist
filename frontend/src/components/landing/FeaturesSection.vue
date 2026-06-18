@@ -6,7 +6,7 @@ const router = useRouter()
 const features = [
   {
     title: 'JD 智能分析',
-    desc: '粘贴职位描述，Capy 会拆解岗位核心要求、隐含期望和匹配度评估，帮你判断是否值得投递，以及如何针对性准备。',
+    desc: '粘贴职位描述，ResumeAst 会拆解岗位核心要求、隐含期望和匹配度评估，帮你判断是否值得投递，以及如何针对性准备。',
     tag: '关键词匹配 + 评估报告',
     route: '/analysis/jd',
     iconWrapBg: 'linear-gradient(135deg, #dde5da, #d0dbca)',
@@ -14,7 +14,7 @@ const features = [
   },
   {
     title: '简历匹配分析',
-    desc: '上传简历并指定目标岗位，Capy 会评估你的经历与岗位的相关性，指出亮点和不足，并给出具体的修改建议。',
+    desc: '上传简历并指定目标岗位，ResumeAst 会评估你的经历与岗位的相关性，指出亮点和不足，并给出具体的修改建议。',
     tag: 'PDF / Word 格式支持',
     route: '/analysis/resume',
     iconWrapBg: 'linear-gradient(135deg, #fce4dc, #f5d8cc)',
@@ -37,7 +37,7 @@ const features = [
         </div>
         <h2 class="text-3xl lg:text-5xl font-bold mb-4" style="font-family: var(--font-heading)">三个维度，全面准备</h2>
         <p class="text-lg mx-auto" style="color: var(--color-ink-light); max-width: 560px; line-height: var(--leading-relaxed)">
-          从技术能力到岗位匹配，再到简历优化，每个环节都有 Capy 帮你梳理
+          从技术能力到岗位匹配，再到简历优化，每个环节都有 ResumeAst 帮你梳理
         </p>
       </div>
 
@@ -89,7 +89,7 @@ const features = [
             {{ f.tag }}
           </span>
 
-          <!-- Deco capybara -->
+          <!-- Deco illustration -->
           <svg v-if="i === 0" class="absolute bottom-2.5 right-2.5 opacity-[0.06] hover:opacity-[0.12] transition-opacity" width="120" height="120" viewBox="0 0 140 120" fill="none">
             <path d="M55 75 C30 75, 15 58, 20 42 C23 32, 35 22, 55 18 C72 14, 90 18, 100 30 C110 42, 108 65, 90 75 C78 82, 68 80, 55 75 Z" stroke="#C4956A" stroke-width="2" stroke-linecap="round" fill="none"/>
             <circle cx="50" cy="42" r="2" fill="#C4956A"/>

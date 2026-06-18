@@ -98,13 +98,13 @@ async def _handle_voice_mode(
     resume_content = ctx.get("resume_content") or ""
     resume_id = ctx.get("resume_id") or ""
 
-    capy_note = ""
+    interview_note = ""
     if resume_id:
         from config.settings import settings
         from storage.memory.store import MemoryStore
 
         memory_store = MemoryStore(root_dir=settings.MEMORY_ROOT)
-        capy_note = memory_store.read_capy_note(user_id, resume_id) or ""
+        interview_note = memory_store.read_interview_note(user_id, resume_id) or ""
 
     # Create realtime agent
     try:
@@ -114,7 +114,7 @@ async def _handle_voice_mode(
             user_id=user_id,
             resume_content=resume_content,
             resume_id=resume_id or "",
-            capy_note=capy_note,
+            interview_note=interview_note,
         )
     except RealtimeNotConfigured as e:
         await _ws_send_error(websocket, "realtime_not_configured", str(e))

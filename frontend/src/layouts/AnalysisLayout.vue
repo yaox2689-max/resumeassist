@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
+import AppLogo from '@/components/common/AppLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { useScrollState } from '@/composables/useScrollState.js'
 import { useAuth } from '@/stores/auth.js'
@@ -50,7 +50,7 @@ const bottomLinks = [
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </router-link>
           <div class="flex items-center gap-2">
-            <CapybaraLogo :size="24" />
+            <AppLogo :size="24" />
             <span class="font-semibold text-sm">
               {{ route.meta.title?.replace(' — ResumeAst', '') || '分析' }}
             </span>

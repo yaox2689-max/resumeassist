@@ -65,7 +65,7 @@ async function handleUpload() {
 
 async function analyzeResume(resume, force = false) {
   loading.value = true
-  loadingText.value = '正在分析简历，Capy 在仔细阅读中...'
+  loadingText.value = '正在分析简历，ResumeAst 在仔细阅读中...'
   error.value = null
   try {
     const data = await api.analyzeResume(resume.id, force)

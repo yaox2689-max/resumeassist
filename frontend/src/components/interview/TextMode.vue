@@ -1,7 +1,7 @@
 <script setup>
 import { ref, nextTick, onMounted, watch } from 'vue'
 import { api } from '@/api/index.js'
-import CapybaraLogo from '@/components/common/CapybaraLogo.vue'
+import AppLogo from '@/components/common/AppLogo.vue'
 import { renderMarkdown } from '@/utils/renderMarkdown.js'
 import { eventsToMessages } from '@/utils/interviewHelpers.js'
 
@@ -250,7 +250,7 @@ onMounted(async () => {
 
       <h2 class="chat-welcome__title" style="font-family: var(--font-heading)">准备好了吗？</h2>
       <p class="chat-welcome__desc">
-        Capy会根据你的简历和目标岗位进行个性化提问。<br>
+        ResumeAst会根据你的简历和目标岗位进行个性化提问。<br>
         选择下方的面试类型开始吧。
       </p>
 
@@ -298,8 +298,8 @@ onMounted(async () => {
           :class="msg.role === 'user' ? 'chat-bubble--user' : 'chat-bubble--ai'"
         >
           <div v-if="msg.role === 'ai'" class="bubble-header">
-            <CapybaraLogo :size="16" :stroke-width="2" />
-            Capy
+            <AppLogo :size="16" :stroke-width="2" />
+            ResumeAst
           </div>
           <template v-if="msg.role === 'ai'">
             <div v-html="msg.html || renderMarkdown(msg.content)"></div>

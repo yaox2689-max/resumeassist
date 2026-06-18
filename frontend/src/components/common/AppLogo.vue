@@ -1,5 +1,5 @@
 <script setup>
-import capyLogo from '@/assets/capy_logo.png'
+import appLogo from '@/assets/logo.png'
 
 defineProps({
   size: { type: Number, default: 36 },
@@ -10,7 +10,7 @@ defineProps({
 
 <template>
   <img
-    :src="capyLogo"
+    :src="appLogo"
     alt="ResumeAst"
     :width="size"
     :height="size"
