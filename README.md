@@ -1,136 +1,276 @@
+<div align="center">
+
 # ResumeAst
 
-1. **温暖优先于效率** — 情感舒适是第一位的
-2. **支持而非施压** — 鼓励进步，不制造焦虑
-3. **人性化而非企业化** — 对话式语气，自然流畅
-4. **清晰而不冰冷** — 干净的布局，温暖的色彩与动效
+**AI 模拟面试平台 | AI Agent Development**
 
+<p align="center">
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Vue%203-4FC08D?style=flat&logo=vue.js&logoColor=white" alt="Vue 3">
+  <img src="https://img.shields.io/badge/WebSocket-Realtime-blue" alt="WebSocket">
+  <img src="https://img.shields.io/badge/ReAct%20Agent-Custom-orange" alt="ReAct Agent">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
+</p>
 
-## 简介
+<p align="center">
+  面向求职面试场景的 AI 模拟面试平台，自研 ReAct Agent 框架，支持文字/语音双模式面试、JD 分析、简历多模态分析，以及跨会话分层记忆系统。
+</p>
 
-ResumeAst 是一间面试前的练习室 —— 温暖、包容、不带评判。不同于冷冰冰的企业 HR 平台和令人焦虑的刷题网站，ResumeAst 让你按自己的节奏练习，获得真诚的反馈，逐步建立信心。
+<p align="center">
+  <a href="#-快速开始">快速开始</a> ·
+  <a href="#-核心功能">核心功能</a> ·
+  <a href="#-架构设计">架构设计</a> ·
+  <a href="#-技术栈">技术栈</a> ·
+  <a href="#-项目结构">项目结构</a> ·
+  <a href="#-contributing">参与贡献</a>
+</p>
 
-线条水豚吉祥物体现了产品气质：沉稳、亲切、不急不躁。
+<br>
 
-### 功能
+</div>
 
-- **模拟面试** — 支持文字和语音两种模式的 AI 模拟面试，覆盖技术、行为、综合三类面试官，并且支持一键在两个模式间无缝切换
-- **岗位描述分析** — 粘贴 JD 文本，获得结构化的岗位要求分析
-- **简历管理** — 上传 PDF/图片简历，AI 多模态分析并给出改进建议
-- **面试总结** — 面试结束后自动生成总结报告，含亮点、建议和技术/行为评估
-- **记忆系统** — 跨会话的分层记忆（用户画像、简历笔记、真实面试题），让面试官越练越懂你
+---
 
-## 技术栈
+## 核心功能
 
-| 层级 | 技术 |
-|------|------|
-| **前端** | Vue 3 + Vite + Tailwind CSS |
-| **后端** | FastAPI + 自研 ReAct Agent Loop + Realtime Voice Agent |
-| **数据库** | SQLite (aiosqlite) + SQLAlchemy 2.0 + JSONL 事件日志 |
-| **LLM** | MiMo / DashScope / DeepSeek（文本）；DashScope Qwen-Omni / OpenAI Realtime（语音） |
-| **可观测性** | Langfuse（OpenTelemetry SDK v4） |
-| **设计系统** | 大地色系（蜂蜜橡木、苔藓绿、珊瑚沙）+ Plus Jakarta Sans / Outfit |
+### 模拟面试（文字 + 语音双模式）
 
-### Agent 架构
+- **文字模式**：基于 SSE 流式输出，ReAct Agent 逐步推理、追问，支持打断恢复
+- **语音模式**：基于 WebSocket 双泵架构，实时语音 LLM（DashScope Qwen-Omni / OpenAI Realtime），支持语义 VAD、双向实时转写、barge-in 打断
+- **一键切换**：文字/语音无缝衔接，历史对话自动回放，handoff 指令防止上下文断裂
 
-仿照 Claude Code 的 ReAct 循环设计：
+### Agent 框架（自研 ReAct）
 
-- **ReActAgent** — Reason → Act → Observe 循环，支持迭代推理、工具调用、上下文压缩
-- **RealtimeAgent** — 双泵架构，桥接客户端 WebSocket 与实时语音 LLM，支持打断、中注入摘要、不活跃检测
-- **AgentProfile** — YAML 配置驱动，定义 LLM、工具、提示词、策略、语音参数
-- **MemoryStore** — 分层 Markdown 记忆（用户画像 / 简历笔记 / 真实面试题），跨会话持久化
-- **状态机** - 7 个状态通过有限状态机严格管控转换（IDLE → THINKING → STREAMING_TEXT → EXECUTING_TOOLS → AGGREGATING），任意状态可被中断至 INTERRUPTED；语音模式另设 LISTENING / AI_SPEAKING / THINKING / CLOSED 四态。
-- **其他** - 上下文管理、容错与降级策略等
+- **7 态有限状态机**：IDLE → THINKING → STREAMING_TEXT → EXECUTING_TOOLS → AGGREGATING → INTERRUPTED → COMPACTING，严格校验转换，任意状态可中断
+- **上下文压缩**：超 80K token 自动摘要旧轮次，保留近 3 轮完整对话
+- **工具系统**：装饰器声明 + Pydantic 参数校验 + 白名单隔离 + 超时控制
+- **LLM 降级**：主模型 ProviderError 时自动切换 fallback 模型
 
-## 核心架构
+### 配置驱动（YAML Agent Profile）
 
-### 文字面试（SSE 流式）
+```yaml
+id: "interviewer-technical"
+llm:
+  provider: "mimo"
+  model: "mimo-v2.5-pro"
+  temperature: 0.7
+  fallback: { provider: "mimo", model: "mimo-v2.5" }
+tools: ["save_real_question"]
+realtime:
+  provider: "dashscope_realtime"
+  vad_mode: "semantic"
+  max_session_minutes: 15
+```
+
+不同面试官角色（技术面/行为面/综合面）只需一个 YAML 文件，不改代码。
+
+### 分层记忆系统
 
 ```
-前端 TextMode → POST /api/sessions/{id}/messages
-             → ReActAgent.run()
-             → LLM 流式输出 + 工具调用
-             → SSE 事件推送到前端
+storage/memory/<user_id>/
+├── user.md                    # 用户画像（跨简历共享）
+└── <resume_id>/
+    ├── INTERVIEW_NOTE.md      # 面试官笔记（跨会话持久化）
+    └── REAL_QUES.md           # 真实面试题
 ```
 
+- **实时路径**：用户提到面试题 → `save_real_question` 工具即时写入
+- **异步路径**：面试结束 → `summary-generator` Agent 从对话中提取用户画像和面试官笔记，LLM 智能合并写入
 
-### 语音面试（WebSocket 实时）
+### 其他能力
+
+- **JD 分析**：粘贴职位描述，结构化拆解核心要求、隐含期望
+- **简历分析**：支持 PDF/图片多模态解析，AI 给出改进建议
+- **面试总结**：面试结束后自动生成报告（亮点、建议、技术/行为评估）
+- **Langfuse 可观测性**：全链路追踪 ReAct 步骤、工具调用、LLM 耗时、token 消耗
+
+---
+
+## 架构设计
+
+### 文字模式（SSE 流式）
 
 ```
-前端 VoiceMode → WebSocket /ws/voice/{session_id}
-              → RealtimeAgent（双泵架构）
-              → 客户端音频 ↔ 实时 LLM（DashScope Qwen-Omni / OpenAI）
-              → 支持 VAD、打断（barge-in）、实时转写
+┌─────────┐    POST /messages    ┌──────────────┐    stream     ┌─────────┐
+│  Vue 3  │ ──────────────────►  │   FastAPI    │ ────────────► │  LLM    │
+│ Frontend│ ◄──────────────────  │ ReActAgent   │ ◄──────────── │ Provider│
+│         │    GET /stream (SSE)  │  7态FSM      │   tool_use    │         │
+└─────────┘                      └──────┬───────┘               └─────────┘
+                                        │
+                                   ┌────▼────┐
+                                   │  Tools  │
+                                   │ (Pydantic)
+                                   └─────────┘
 ```
+
+### 语音模式（WebSocket 双泵）
+
+```
+┌─────────┐   WebSocket    ┌──────────────────────────┐   WS/HTTP   ┌──────────────┐
+│  Client │ ◄────────────► │     RealtimeAgent        │ ◄─────────► │ Realtime LLM │
+│  Audio  │                │  ┌─────────────────────┐ │             │ (Qwen-Omni)  │
+└─────────┘                │  │ 上行泵: 音频/指令转发 │ │             └──────────────┘
+                           │  │ 下行泵: 音频/事件推送 │ │
+                           │  └─────────────────────┘ │
+                           │  + MidSummary (8min)     │
+                           │  + Inactivity Watchdog   │
+                           └──────────────────────────┘
+```
+
+### 状态机（文字模式 7 态）
+
+```
+IDLE ──► THINKING ──► STREAMING_TEXT ──► [end_turn] ──► IDLE
+              ▲              │
+              │         [tool_use]
+              │              ▼
+              └── AGGREGATING ◄── EXECUTING_TOOLS
+
+任何状态 ──[interrupt]──► INTERRUPTED ──► IDLE
+THINKING ──[>80k token]──► COMPACTING ──► THINKING
+```
+
+---
 
 ## 快速开始
+
+### 环境要求
+
+- Python 3.11+
+- Node.js 18+
+- 至少一个 LLM API Key（MiMo / DashScope / DeepSeek）
 
 ### 后端
 
 ```bash
 cd backend
-uv sync
-cp .env.example .env   # 填入 LLM API Key
-uv run uvicorn api.app:app --reload
+uv sync                          # 安装依赖（推荐 uv）
+cp .env.example .env             # 填入 LLM API Key
+uv run uvicorn api.app:app --reload --host 0.0.0.0 --port 8000
 ```
-
-API 默认运行在 `http://localhost:8000`。
 
 ### 前端
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev                      # 开发服务器 http://localhost:3000
 ```
 
-开发服务器默认运行在 `http://localhost:3000`。
+### 语音模式（可选）
+
+语音面试需要配置实时语音 LLM 的 API Key：
+
+```bash
+# .env
+DASHSCOPE_API_KEY=sk-xxx         # DashScope（默认）
+OPENAI_API_KEY=sk-xxx            # OpenAI Realtime（可选）
+```
 
 ### Langfuse 追踪（可选）
 
 ```bash
-# 在 .env 中设置 TRACER=langfuse 并配置 Langfuse 密钥
-# 或使用 Docker Compose 启动 Langfuse 服务
+# .env 中设置
+TRACER=langfuse
+LANGFUSE_PUBLIC_KEY=pk-xxx
+LANGFUSE_SECRET_KEY=sk-xxx
+
+# 或使用 Docker Compose 启动本地 Langfuse
 docker compose --profile langfuse up -d
 ```
 
-![Langfuse 追踪](langfuse_tracer.png)
+---
+
+## 技术栈
+
+| 层级 | 技术 |
+|------|------|
+| **前端** | Vue 3 + Vite + Tailwind CSS + Pinia |
+| **后端** | FastAPI + 自研 ReAct Agent + WebSocket |
+| **数据库** | SQLite (aiosqlite) + SQLAlchemy 2.0 |
+| **事件存储** | JSONL Event Sourcing（过滤高频事件，保留关键对话） |
+| **记忆系统** | 分层 Markdown 文件 + LLM 智能合并 |
+| **LLM Provider** | MiMo / DashScope / DeepSeek（文本）；DashScope Qwen-Omni / OpenAI Realtime（语音） |
+| **可观测性** | Langfuse（OpenTelemetry SDK） |
+
+---
 
 ## 项目结构
 
 ```
-job-seeker-assistant/
-├── frontend/               # Vue 3 前端
+resumeassist/
+├── backend/                     # FastAPI 后端
+│   ├── agent/                   #   Agent 核心
+│   │   ├── loop.py              #     ReActAgent（文字模式，7态FSM）
+│   │   ├── realtime_agent.py    #     RealtimeAgent（语音模式，双泵架构）
+│   │   ├── factory.py           #     AgentFactory（配置驱动创建）
+│   │   ├── profile.py           #     AgentProfile（Pydantic 配置模型）
+│   │   ├── context/             #     上下文构建与压缩
+│   │   └── llm/                 #     LLM 抽象层 + Provider 实现
+│   │       ├── providers/       #       文本 LLM（MiMo、DeepSeek、DashScope）
+│   │       └── realtime/        #       实时语音 LLM（OpenAI、DashScope）
+│   ├── api/                     #   路由层（REST / SSE / WebSocket）
+│   ├── config/                  #   配置 + Agent Profile YAML
+│   │   └── agents/              #     7 个面试官角色配置
+│   ├── tool/                    #   工具系统（装饰器 + 注册表 + 执行器）
+│   ├── service/                 #   业务逻辑（会话、简历、任务）
+│   ├── storage/                 #   数据存储（SQLite、JSONL、Markdown 记忆）
+│   ├── trace/                   #   Langfuse 可观测性
+│   ├── data/                    #   系统提示词 + 技能定义
+│   └── tests/                   #   测试
+├── frontend/                    # Vue 3 前端
 │   └── src/
-│       ├── pages/              # 页面（首页、面试、分析、简历）
-│       ├── components/         # 可复用组件（面试、通用）
-│       ├── composables/        # 组合式函数（语音、配置、分析）
-│       ├── utils/              # 工具函数（音频、Markdown、事件转换）
-│       ├── stores/             # Pinia 状态管理
-│       ├── layouts/            # 页面布局
-│       ├── router/             # 路由配置
-│       ├── data/               # 静态数据（面试类型、示例问题）
-│       └── api/                # 接口层
-├── backend/                # FastAPI 后端
-│   ├── agent/                  # Agent 核心
-│   │   ├── loop.py                 # ReActAgent（文字模式）
-│   │   ├── realtime_agent.py       # RealtimeAgent（语音模式）
-│   │   ├── factory.py              # AgentFactory
-│   │   ├── context/                # 上下文构建与压缩
-│   │   └── llm/                    # LLM 抽象与 provider
-│   │       ├── providers/              # 文本 LLM（MiMo、DeepSeek、DashScope）
-│   │       └── realtime/               # 实时语音 LLM（OpenAI、DashScope）
-│   ├── api/                    # FastAPI 路由（REST / SSE / WebSocket）
-│   ├── config/                 # 配置与 Agent Profile YAML
-│   ├── tool/                   # 工具系统（3 个内建工具）
-│   ├── service/                # 业务逻辑（会话、简历、任务）
-│   ├── storage/                # 数据存储（SQLite、JSONL、Markdown 记忆）
-│   ├── trace/                  # Langfuse 可观测性集成
-│   ├── data/                   # 系统提示词与技能定义
-│   └── tests/                  # 测试
-├── DESIGN.md               # 设计系统规范
-├── PRODUCT.md              # 产品定位和用户画像
-├── CLAUDE.md               # Claude Code 项目指令
-└── README.md               # 本文件
+│       ├── pages/               #   页面（首页、面试、简历、JD 分析）
+│       ├── components/          #   组件（面试、通用、Landing）
+│       ├── composables/         #   组合式函数（语音、配置）
+│       ├── stores/              #   Pinia 状态管理
+│       └── api/                 #   接口层
+└── README.md
 ```
 
+---
+
+## Agent Profile 配置
+
+所有面试官角色通过 YAML 配置定义，支持热插拔（改配置无需重启，新会话自动加载）：
+
+| Profile | 用途 |
+|---------|------|
+| `interviewer-technical` | 技术面试官 |
+| `interviewer-behavior` | 行为面试官 |
+| `interviewer-comprehensive` | 综合面试官 |
+| `resume-analyzer` | 简历分析 |
+| `jd-analyzer` | JD 分析 |
+| `summary-generator` | 面试总结生成 |
+| `mid-summary-injector` | 语音中段摘要 |
+
+---
+
+## Contributing
+
+欢迎贡献！请阅读以下步骤：
+
+1. Fork 本仓库
+2. 创建特性分支：`git checkout -b feature/your-feature`
+3. 提交更改：`git commit -m 'feat: add your feature'`
+4. 推送分支：`git push origin feature/your-feature`
+5. 提交 Pull Request
+
+### 开发规范
+
+- Python：遵循 PEP 8，使用 `ruff` 格式化
+- Vue：遵循 Vue 3 Composition API 规范
+- 提交信息：使用 [Conventional Commits](https://www.conventionalcommits.org/) 格式
+- 新功能请附带测试
+
+---
+
+## License
+
+[MIT License](LICENSE) © 2026 [yaox2689-max](https://github.com/yaox2689-max)
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ by ResumeAst</sub>
+</div>
