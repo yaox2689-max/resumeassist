@@ -323,16 +323,31 @@ class RealtimeAgent:
                         payload={"code": "invalid_audio_frame", "retryable": True},
                     ))
                     continue
-                await upstream.send_audio(audio)
+                try:
+                    await upstream.send_audio(audio)
+                except Exception:
+                    logger.warning("Upstream connection lost, closing pump")
+                    self._closed = True
+                    return
 
             elif msg_type == "control.commit":
                 # Manual VAD: commit audio buffer and trigger response
-                await upstream.commit_audio()
-                await upstream.create_response()
+                try:
+                    await upstream.commit_audio()
+                    await upstream.create_response()
+                except Exception:
+                    logger.warning("Upstream connection lost on commit")
+                    self._closed = True
+                    return
                 self._set_state(RealtimeAgentState.THINKING)
 
             elif msg_type == "control.interrupt":
-                await upstream.cancel_response()
+                try:
+                    await upstream.cancel_response()
+                except Exception:
+                    logger.warning("Upstream connection lost on interrupt")
+                    self._closed = True
+                    return
                 await self._push_to_client(client_ws, FrontendEvent(
                     type=EventType.AI_INTERRUPTED,
                     payload={},
