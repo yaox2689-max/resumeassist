@@ -56,6 +56,17 @@ class RealtimeConfig(BaseModel):
     midsummary: RealtimeMidSummaryConfig = Field(default_factory=RealtimeMidSummaryConfig)
 
 
+class MCPServerConfig(BaseModel):
+    """MCP Server configuration for connecting to external tool providers."""
+
+    name: str
+    transport: str = "stdio"  # stdio only for now
+    command: str = ""  # e.g. "npx"
+    args: list[str] = Field(default_factory=list)  # e.g. ["-y", "@modelcontextprotocol/server-brave-search"]
+    env: dict[str, str] = Field(default_factory=dict)  # env vars for the server process
+    tools: list[str] = Field(default_factory=list)  # whitelist of tool names to expose
+
+
 class AgentProfile(BaseModel):
     """Agent profile loaded from YAML configuration."""
 
@@ -67,3 +78,4 @@ class AgentProfile(BaseModel):
     context: ContextConfig = Field(default_factory=ContextConfig)
     policy: PolicyConfig = Field(default_factory=PolicyConfig)
     realtime: RealtimeConfig | None = None
+    mcp_servers: list[MCPServerConfig] = Field(default_factory=list)

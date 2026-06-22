@@ -1,0 +1,15 @@
+id: "strategy-agent"
+prompt_template: "data/prompt/strategy_agent.md"
+llm:
+  provider: "mimo"
+  model: "mimo-v2.5"
+  temperature: 0.5
+tools: []
+skills: []
+context:
+  max_history_tokens: 80000
+  compact_threshold: 60000
+policy:
+  max_steps: 1
+  parallel_tools: 1
+  tool_timeout: 10.0

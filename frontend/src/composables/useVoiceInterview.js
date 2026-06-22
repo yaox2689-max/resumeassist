@@ -16,11 +16,14 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
   const transcriptEntries = ref([])
   const liveAiText = ref('')
   const waveformActive = ref(false)
+  const scoreBubble = ref(null)
+  let scoreBubbleTimeout = null
 
   let ws = null
   let capture = null
   let player = null
   let isMuted = false
+  let pendingResume = false
   let isPaused = false
   let inputSampleRate = 24000
   let outputSampleRate = 24000
@@ -104,6 +107,7 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
         break
       }
       case 'user.transcript':
+        pendingResume = true
         appendTranscript('你', data.payload?.text || '')
         break
       case 'assistant.transcript.delta':
@@ -119,6 +123,10 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
         break
       }
       case 'assistant.audio.delta':
+        if (pendingResume) {
+          player?.resume()
+          pendingResume = false
+        }
         avatarSpeaking.value = true
         waveformActive.value = false
         player?.playBase64(data.payload?.audio)
@@ -138,6 +146,11 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
         error.value = '语音面试时长已达上限'
         hintText.value = error.value
         disconnect()
+        break
+      case 'score.update':
+        scoreBubble.value = data.payload
+        if (scoreBubbleTimeout) clearTimeout(scoreBubbleTimeout)
+        scoreBubbleTimeout = setTimeout(() => { scoreBubble.value = null }, 4000)
         break
       case 'turn.done':
         disconnect()
@@ -252,6 +265,7 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
     transcriptEntries,
     liveAiText,
     waveformActive,
+    scoreBubble,
     connect,
     disconnect,
     setMuted,

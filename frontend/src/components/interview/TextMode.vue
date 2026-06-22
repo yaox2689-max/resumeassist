@@ -22,6 +22,8 @@ const chatContainer = ref(null)
 const textareaRef = ref(null)
 const aiTyping = ref(false)
 const historyLoading = ref(false)
+const scoreBubble = ref(null)
+let scoreBubbleTimeout = null
 let currentEventSource = null
 
 function hasAssistantMessages() {
@@ -83,6 +85,14 @@ function patchStreamingAiMessage(aiIndex, patch) {
   messages.value[aiIndex] = { ...msg, ...patch }
 }
 
+function showScoreBubble(payload) {
+  scoreBubble.value = payload
+  if (scoreBubbleTimeout) clearTimeout(scoreBubbleTimeout)
+  scoreBubbleTimeout = setTimeout(() => {
+    scoreBubble.value = null
+  }, 4000)
+}
+
 function appendAiStreamDelta(aiIndex, delta) {
   if (!delta) return
   const msg = messages.value[aiIndex]
@@ -140,6 +150,8 @@ async function triggerAgent(text) {
           closeSSE()
           aiTyping.value = false
           emit('update:messages', messages.value)
+        } else if (data.type === 'score.update') {
+          showScoreBubble(data.payload)
         }
       } catch (e) {
         // Keepalive or non-JSON, ignore
@@ -285,6 +297,15 @@ onMounted(async () => {
   </div>
 
   <div v-else class="interview-page">
+    <!-- Score Bubble -->
+    <Transition name="score-fade">
+      <div v-if="scoreBubble" class="score-bubble">
+        <span class="score-bubble__label">{{ scoreBubble.dimension === 'technical_depth' ? '技术深度' : scoreBubble.dimension === 'expression_clarity' ? '表达清晰度' : '逻辑完整性' }}</span>
+        <span class="score-bubble__score">{{ scoreBubble.score }}/10</span>
+        <p class="score-bubble__reason">{{ scoreBubble.reason }}</p>
+      </div>
+    </Transition>
+
     <div v-if="historyLoading" class="flex items-center justify-center flex-1">
       <p class="text-ink-muted text-sm">加载聊天记录...</p>
     </div>
@@ -676,5 +697,63 @@ onMounted(async () => {
   .welcome-option {
     padding: var(--space-3) var(--space-4);
   }
+}
+
+/* Score Bubble */
+.score-bubble {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: var(--color-white);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-lg);
+  max-width: 280px;
+  z-index: 10;
+}
+
+.score-bubble__label {
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+.score-bubble__score {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+}
+
+.score-bubble__reason {
+  font-size: var(--text-xs);
+  color: var(--color-ink-light);
+  margin: var(--space-1) 0 0;
+  line-height: var(--leading-normal);
+}
+
+.score-fade-enter-active {
+  transition: all 0.3s var(--ease-out);
+}
+
+.score-fade-leave-active {
+  transition: all 0.3s var(--ease-out);
+}
+
+.score-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.score-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+:global(.dark) .score-bubble {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
 }
 </style>
