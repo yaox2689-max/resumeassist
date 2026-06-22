@@ -406,14 +406,6 @@ class ReActAgent:
                 },
             )
 
-            # Push score update event for scoring tool results
-            if call.tool_name == "trigger_scoring" and result.status == "ok" and result.data:
-                if result.data.get("score") is not None:
-                    yield FrontendEvent(
-                        type=EventType.SCORE_UPDATE,
-                        payload=result.data,
-                    )
-
             yield {
                 "role": "tool",
                 "tool_call_id": call.tool_call_id,
