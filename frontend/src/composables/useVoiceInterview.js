@@ -21,6 +21,7 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
   let capture = null
   let player = null
   let isMuted = false
+  let pendingResume = false
   let isPaused = false
   let inputSampleRate = 24000
   let outputSampleRate = 24000
@@ -104,7 +105,7 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
         break
       }
       case 'user.transcript':
-        player?.resume()
+        pendingResume = true
         appendTranscript('你', data.payload?.text || '')
         break
       case 'assistant.transcript.delta':
@@ -120,6 +121,10 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
         break
       }
       case 'assistant.audio.delta':
+        if (pendingResume) {
+          player?.resume()
+          pendingResume = false
+        }
         avatarSpeaking.value = true
         waveformActive.value = false
         player?.playBase64(data.payload?.audio)
