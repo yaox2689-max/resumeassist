@@ -7,6 +7,7 @@ import logging
 
 from pydantic import BaseModel
 
+from api.schemas import EventType
 from tool.base import ToolContext, ToolResult, tool
 
 logger = logging.getLogger(__name__)
