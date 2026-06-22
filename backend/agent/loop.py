@@ -65,6 +65,7 @@ class ReActAgent:
         resume_content: str = "",
         resume_id: str = "",
         mcp_clients: dict | None = None,
+        agent_factory: object | None = None,
     ) -> None:
         self.profile = profile
         self.llm = llm
@@ -80,6 +81,7 @@ class ReActAgent:
         self._resume_content = resume_content
         self._resume_id = resume_id
         self._mcp_clients = mcp_clients or {}
+        self._agent_factory = agent_factory
         self._text_buffer: list[str] = []
         self._current_tool_calls: list[ToolCall] = []
         self._session_obj: object | None = None
@@ -403,6 +405,15 @@ class ReActAgent:
                     "summary": result.summary,
                 },
             )
+
+            # Push score update event for scoring tool results
+            if call.tool_name == "trigger_scoring" and result.status == "ok" and result.data:
+                if result.data.get("score") is not None:
+                    yield FrontendEvent(
+                        type=EventType.SCORE_UPDATE,
+                        payload=result.data,
+                    )
+
             yield {
                 "role": "tool",
                 "tool_call_id": call.tool_call_id,
@@ -451,6 +462,8 @@ class ReActAgent:
                 resume_id=self._resume_id,
                 memory_root="storage/memory",
                 mcp_clients=self._mcp_clients,
+                agent_factory=self._agent_factory,
+                session_store=self.session_store,
             )
 
         return ctx_factory

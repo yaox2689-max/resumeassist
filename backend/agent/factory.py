@@ -115,6 +115,7 @@ class AgentFactory:
             resume_content=resume_content,
             resume_id=resume_id,
             mcp_clients=self.mcp_clients,
+            agent_factory=self,
         )
         agent._db_session = db_session
         return agent

@@ -11,6 +11,8 @@ llm:
 tools:
   - save_real_question
   - search_web
+  - trigger_scoring
+  - get_strategy
 skills: []
 mcp_servers:
   - name: "brave-search"

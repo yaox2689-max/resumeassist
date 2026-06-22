@@ -48,6 +48,8 @@ class ToolContext:
     resume_id: str = ""  # resume ID for memory file operations
     memory_root: str = "storage/memory"  # root directory for memory files
     mcp_clients: dict = field(default_factory=dict)  # name -> MCPClient for remote tools
+    agent_factory: Any = None  # AgentFactory for creating sub-agents
+    session_store: Any = None  # SessionStore for reading events
 
 
 @dataclass
