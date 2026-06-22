@@ -47,6 +47,23 @@ async def lifespan(app: FastAPI):
     # Initialize session store
     session_store = SessionStore()
 
+    # Start MCP clients (collect unique server configs from all profiles)
+    mcp_clients: dict[str, object] = {}
+    seen_servers: set[str] = set()
+    for profile in profiles:
+        for server_config in profile.mcp_servers:
+            if server_config.name in seen_servers:
+                continue
+            seen_servers.add(server_config.name)
+            try:
+                from tool.mcp_client import MCPClient
+                client = MCPClient(server_config.model_dump())
+                await client.connect()
+                mcp_clients[server_config.name] = client
+                print(f"Connected MCP server: {server_config.name} ({len(client.get_tool_metas())} tools)")
+            except Exception as e:
+                print(f"Warning: Failed to connect MCP server '{server_config.name}': {e}")
+
     init_tracing()
     if is_tracing_enabled():
         print("Langfuse tracing enabled")
@@ -59,6 +76,7 @@ async def lifespan(app: FastAPI):
         tool_registry=tool_registry,
         session_store=session_store,
         skill_loader=skill_loader,
+        mcp_clients=mcp_clients,
     )
 
     # Store in app state
@@ -67,6 +85,13 @@ async def lifespan(app: FastAPI):
     app.state.profile_loader = profile_loader
 
     yield
+
+    # Close MCP clients
+    for name, client in mcp_clients.items():
+        try:
+            await client.close()
+        except Exception:
+            pass
 
     shutdown_tracing()
     print("Shutting down...")

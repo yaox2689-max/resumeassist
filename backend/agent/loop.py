@@ -64,6 +64,7 @@ class ReActAgent:
         cancel_token: CancelToken | None = None,
         resume_content: str = "",
         resume_id: str = "",
+        mcp_clients: dict | None = None,
     ) -> None:
         self.profile = profile
         self.llm = llm
@@ -78,6 +79,7 @@ class ReActAgent:
         self.state = AgentState.IDLE
         self._resume_content = resume_content
         self._resume_id = resume_id
+        self._mcp_clients = mcp_clients or {}
         self._text_buffer: list[str] = []
         self._current_tool_calls: list[ToolCall] = []
         self._session_obj: object | None = None
@@ -448,6 +450,7 @@ class ReActAgent:
                 db_session=self._db_session,
                 resume_id=self._resume_id,
                 memory_root="storage/memory",
+                mcp_clients=self._mcp_clients,
             )
 
         return ctx_factory

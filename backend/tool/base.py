@@ -47,6 +47,7 @@ class ToolContext:
     db_session: Any = None  # SQLAlchemy AsyncSession
     resume_id: str = ""  # resume ID for memory file operations
     memory_root: str = "storage/memory"  # root directory for memory files
+    mcp_clients: dict = field(default_factory=dict)  # name -> MCPClient for remote tools
 
 
 @dataclass
