@@ -48,6 +48,7 @@ class ToolContext:
     resume_id: str = ""  # resume ID for memory file operations
     memory_root: str = "storage/memory"  # root directory for memory files
     agent_factory: Any = None  # AgentFactory for creating sub-agents
+    session_store: Any = None  # SessionStore for reading events
 
 
 @dataclass

@@ -460,6 +460,7 @@ class ReActAgent:
                 resume_id=self._resume_id,
                 memory_root="storage/memory",
                 agent_factory=self._agent_factory,
+                session_store=self.session_store,
             )
 
         return ctx_factory
