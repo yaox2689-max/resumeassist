@@ -104,6 +104,7 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
         break
       }
       case 'user.transcript':
+        player?.resume()
         appendTranscript('你', data.payload?.text || '')
         break
       case 'assistant.transcript.delta':

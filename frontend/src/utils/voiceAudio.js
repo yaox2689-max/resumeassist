@@ -47,6 +47,7 @@ export class PcmPlayer {
     this.ctx = null
     this.nextTime = 0
     this.sources = []
+    this.muted = false
   }
 
   _ensureContext() {
@@ -60,7 +61,7 @@ export class PcmPlayer {
   }
 
   playBase64(b64) {
-    if (!b64) return
+    if (!b64 || this.muted) return
     this._ensureContext()
     const float32 = pcm16Base64ToFloat32(b64)
     const buffer = this.ctx.createBuffer(1, float32.length, this.sampleRate)
@@ -79,6 +80,7 @@ export class PcmPlayer {
   }
 
   stop() {
+    this.muted = true
     for (const source of this.sources) {
       try {
         source.stop()
@@ -90,6 +92,10 @@ export class PcmPlayer {
     if (this.ctx) {
       this.nextTime = this.ctx.currentTime
     }
+  }
+
+  resume() {
+    this.muted = false
   }
 
   destroy() {
