@@ -50,7 +50,7 @@ async def lifespan(app: FastAPI):
     # Start MCP clients (collect unique server configs from all profiles)
     mcp_clients: dict[str, object] = {}
     seen_servers: set[str] = set()
-    for profile in profiles:
+    for profile in profiles.values():
         for server_config in profile.mcp_servers:
             if server_config.name in seen_servers:
                 continue
