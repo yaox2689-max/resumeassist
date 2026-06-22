@@ -16,6 +16,8 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
   const transcriptEntries = ref([])
   const liveAiText = ref('')
   const waveformActive = ref(false)
+  const scoreBubble = ref(null)
+  let scoreBubbleTimeout = null
 
   let ws = null
   let capture = null
@@ -139,6 +141,11 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
         hintText.value = error.value
         disconnect()
         break
+      case 'score.update':
+        scoreBubble.value = data.payload
+        if (scoreBubbleTimeout) clearTimeout(scoreBubbleTimeout)
+        scoreBubbleTimeout = setTimeout(() => { scoreBubble.value = null }, 4000)
+        break
       case 'turn.done':
         disconnect()
         break
@@ -252,6 +259,7 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
     transcriptEntries,
     liveAiText,
     waveformActive,
+    scoreBubble,
     connect,
     disconnect,
     setMuted,

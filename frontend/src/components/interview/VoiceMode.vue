@@ -146,6 +146,15 @@ onUnmounted(() => {
 
 <template>
   <div class="voice-page">
+    <!-- Score Bubble -->
+    <Transition name="score-fade">
+      <div v-if="voice.scoreBubble" class="score-bubble">
+        <span class="score-bubble__label">{{ voice.scoreBubble.dimension === 'technical_depth' ? '技术深度' : voice.scoreBubble.dimension === 'expression_clarity' ? '表达清晰度' : '逻辑完整性' }}</span>
+        <span class="score-bubble__score">{{ voice.scoreBubble.score }}/10</span>
+        <p class="score-bubble__reason">{{ voice.scoreBubble.reason }}</p>
+      </div>
+    </Transition>
+
     <div class="voice-container">
       <div class="voice-status" :class="voiceRunning && voice.connected ? 'active' : ''">
         <span class="voice-status__dot"></span>
@@ -552,5 +561,63 @@ onUnmounted(() => {
     width: 44px;
     height: 44px;
   }
+}
+
+/* Score Bubble */
+.score-bubble {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: var(--color-white);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-lg);
+  max-width: 280px;
+  z-index: 10;
+}
+
+.score-bubble__label {
+  font-size: var(--text-xs);
+  color: var(--color-ink-muted);
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+.score-bubble__score {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+}
+
+.score-bubble__reason {
+  font-size: var(--text-xs);
+  color: var(--color-ink-light);
+  margin: var(--space-1) 0 0;
+  line-height: var(--leading-normal);
+}
+
+.score-fade-enter-active {
+  transition: all 0.3s var(--ease-out);
+}
+
+.score-fade-leave-active {
+  transition: all 0.3s var(--ease-out);
+}
+
+.score-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.score-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+:global(.dark) .score-bubble {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
 }
 </style>

@@ -46,6 +46,9 @@ class EventType(str, Enum):
     COST_LIMIT_REACHED = "cost.limit_reached"
     SYSTEM_CONTEXT_REFRESHED = "system.context_refreshed"
 
+    # Multi-agent events
+    SCORE_UPDATE = "score.update"
+
 
 class FrontendEvent(BaseModel):
     """Event sent to the frontend via WebSocket or stored in JSONL."""

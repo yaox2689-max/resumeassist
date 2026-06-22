@@ -1,0 +1,15 @@
+id: "scoring-agent"
+prompt_template: "data/prompt/scoring_agent.md"
+llm:
+  provider: "mimo"
+  model: "mimo-v2.5"
+  temperature: 0.3
+tools: []
+skills: []
+context:
+  max_history_tokens: 50000
+  compact_threshold: 40000
+policy:
+  max_steps: 1
+  parallel_tools: 1
+  tool_timeout: 10.0

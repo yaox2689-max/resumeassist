@@ -112,6 +112,7 @@ class AgentFactory:
             session_id=session_id,
             resume_content=resume_content,
             resume_id=resume_id,
+            agent_factory=self,
         )
         agent._db_session = db_session
         return agent
