@@ -369,22 +369,27 @@ class ReActAgent:
         """Execute tool calls one by one, yielding events and tool messages.
 
         Yields FrontendEvent for frontend display, and dict messages for the
-        LLM context. This ensures each tool result is visible before the next
-        tool call, so the agent can react to failures.
+        LLM context. Tools are executed in parallel for speed, with results
+        yielded in order after all complete.
         """
+        if not self._current_tool_calls:
+            return
+
+        # Execute all tools in parallel
+        ctx_factory = self._make_ctx_factory()
+        tasks = []
         for call in self._current_tool_calls:
-            with trace_tool(name=call.tool_name, args=call.args) as tool_span:
-                batch = await self.tool_executor.run_parallel(
-                    [call],
-                    self._make_ctx_factory(),
-                    self.tools,
-                    parallel_limit=1,
-                    cancel_token=self.cancel_token,
-                )
-                result = batch[0]
-                tool_span.update(
-                    output=tool_result_output(result),
-                    level=span_level_for_result(result),
+            tasks.append(self._execute_one_tool(call, ctx_factory))
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Yield events in order
+        for call, result in zip(self._current_tool_calls, results):
+            if isinstance(result, Exception):
+                result = ToolResult.err(
+                    code="tool_error",
+                    message=str(result),
+                    summary="Tool execution failed",
                 )
 
             yield FrontendEvent(
@@ -413,6 +418,23 @@ class ReActAgent:
                     result.data if result.status == "ok" else result.error
                 ),
             }
+
+    async def _execute_one_tool(self, call: ToolCall, ctx_factory: Callable) -> ToolResult:
+        """Execute a single tool call."""
+        with trace_tool(name=call.tool_name, args=call.args) as tool_span:
+            batch = await self.tool_executor.run_parallel(
+                [call],
+                ctx_factory,
+                self.tools,
+                parallel_limit=1,
+                cancel_token=self.cancel_token,
+            )
+            result = batch[0]
+            tool_span.update(
+                output=tool_result_output(result),
+                level=span_level_for_result(result),
+            )
+        return result
 
     def _build_assistant_tool_use_message(self) -> dict:
         """Build assistant message with tool_calls for the next LLM turn."""
