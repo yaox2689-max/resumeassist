@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator, Callable
 from trace import (
     span_level_for_result,
@@ -32,6 +33,8 @@ from api.schemas import EventType, FrontendEvent
 from storage.session.store import SessionStore
 from tool.base import ToolContext, ToolMeta, ToolResult
 from tool.executor import ToolCall, ToolExecutor
+
+logger = logging.getLogger(__name__)
 
 
 class CancelToken:
@@ -267,14 +270,39 @@ class ReActAgent:
                         "retryable": event.retryable,
                     },
                 )
-                if event.retryable and self.profile.llm.fallback:
-                    fallback_llm = self._create_fallback_llm()
-                    if fallback_llm:
-                        async for fe in self._process_llm_events(
-                            messages, fallback_llm.stream(messages, self._get_tool_schemas())
-                        ):
-                            yield fe
-                        return
+                # Retry logic: 2 attempts on main model, then fallback
+                if event.retryable:
+                    max_retries = 2
+                    for retry_attempt in range(max_retries):
+                        logger.warning(
+                            "LLM error (attempt %s/%s): %s",
+                            retry_attempt + 1,
+                            max_retries,
+                            event.message,
+                        )
+                        await asyncio.sleep(1)  # Brief backoff
+                        try:
+                            async for fe in self._process_llm_events(
+                                messages, self.llm.stream(messages, self._get_tool_schemas())
+                            ):
+                                yield fe
+                            return  # Success, exit retry loop
+                        except Exception as retry_error:
+                            logger.error("Retry %s failed: %s", retry_attempt + 1, retry_error)
+                            if retry_attempt == max_retries - 1:
+                                break  # Exhausted retries, try fallback
+
+                    # If retries exhausted, try fallback
+                    if self.profile.llm.fallback:
+                        fallback_llm = self._create_fallback_llm()
+                        if fallback_llm:
+                            logger.info("Switching to fallback model")
+                            async for fe in self._process_llm_events(
+                                messages, fallback_llm.stream(messages, self._get_tool_schemas())
+                            ):
+                                yield fe
+                            return
+
                 yield FrontendEvent(
                     type=EventType.TURN_DONE,
                     payload={"stop_reason": "error"},
