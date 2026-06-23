@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 
 from agent.context.skill_loader import SkillLoader
@@ -64,6 +65,24 @@ class ContextBuilder:
         resume_id: str | None = None,
     ) -> str:
         """Build the system prompt from profile, skills, resume, and memory."""
+        # Cached: base prompt template + skill summaries
+        base_prompt = self._get_cached_base_prompt(profile)
+
+        # Cached: resume content (per resume_id)
+        if resume_content:
+            base_prompt += self._get_cached_resume_section(resume_content, resume_id)
+
+        # NOT cached: memory files (updated by tools in real-time)
+        if user_id and resume_id:
+            memory = self._load_memory(user_id, resume_id)
+            if memory:
+                base_prompt += memory
+
+        return base_prompt
+
+    @lru_cache(maxsize=16)
+    def _get_cached_base_prompt(self, profile: AgentProfile) -> str:
+        """Cache: prompt template + skill summaries (profile doesn't change during session)."""
         # Read prompt template
         prompt_path = Path(profile.prompt_template)
         if prompt_path.exists():
@@ -78,20 +97,15 @@ class ContextBuilder:
             for skill_id, summary in skill_summaries:
                 base_prompt += f"- **{skill_id}**: {summary}\n"
 
-        # Inject resume content
-        if resume_content:
-            base_prompt += f"\n\n## 用户简历\n{resume_content}\n"
-
-        # Inject memory files
-        if user_id and resume_id:
-            memory = self._load_memory(user_id, resume_id)
-            if memory:
-                base_prompt += memory
-
         return base_prompt
 
+    @lru_cache(maxsize=32)
+    def _get_cached_resume_section(self, resume_content: str, resume_id: str | None) -> str:
+        """Cache: resume section (resume doesn't change during session)."""
+        return f"\n\n## 用户简历\n{resume_content}\n"
+
     def _load_memory(self, user_id: str, resume_id: str) -> str:
-        """Load and format memory files for injection."""
+        """Load and format memory files for injection (NOT cached — updated by tools)."""
         from storage.memory.store import MemoryStore
 
         store = MemoryStore(root_dir=self._memory_root)
