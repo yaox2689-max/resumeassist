@@ -58,9 +58,17 @@ async def analyze_jd(body: JdAnalyzeRequest):
     if not result.text:
         raise HTTPException(502, "LLM returned empty response")
 
-    # Parse JSON
+    # Parse JSON (strip markdown code fences if LLM wrapped them)
+    raw = result.text.strip()
+    if raw.startswith("```"):
+        # Remove ```json ... ``` wrapper
+        first_newline = raw.index("\n")
+        last_fence = raw.rfind("```")
+        if last_fence > first_newline:
+            raw = raw[first_newline + 1:last_fence].strip()
+
     try:
-        data = json.loads(result.text)
+        data = json.loads(raw)
     except json.JSONDecodeError:
         raise HTTPException(500, f"LLM returned invalid JSON: {result.text[:200]}")
 
