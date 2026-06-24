@@ -133,6 +133,7 @@ async def send_message(
                 resume_id=ctx["resume_id"],
             )
             agent.cancel_token = state["cancel_token"]
+            agent._event_queue = state["event_queue"]
 
             # Run agent in background
             asyncio.create_task(

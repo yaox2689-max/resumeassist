@@ -66,7 +66,9 @@ class ContextBuilder:
     ) -> str:
         """Build the system prompt from profile, skills, resume, and memory."""
         # Cached: base prompt template + skill summaries
-        base_prompt = self._get_cached_base_prompt(profile)
+        base_prompt = self._get_cached_base_prompt(
+            profile.id, profile.prompt_template, tuple(profile.skills)
+        )
 
         # Cached: resume content (per resume_id)
         if resume_content:
@@ -81,17 +83,15 @@ class ContextBuilder:
         return base_prompt
 
     @lru_cache(maxsize=16)
-    def _get_cached_base_prompt(self, profile: AgentProfile) -> str:
+    def _get_cached_base_prompt(self, profile_id: str, prompt_template: str, skills: tuple[str, ...]) -> str:
         """Cache: prompt template + skill summaries (profile doesn't change during session)."""
-        # Read prompt template
-        prompt_path = Path(profile.prompt_template)
+        prompt_path = Path(prompt_template)
         if prompt_path.exists():
             base_prompt = prompt_path.read_text(encoding="utf-8")
         else:
-            base_prompt = f"You are {profile.id}, an AI interviewer."
+            base_prompt = f"You are {profile_id}, an AI interviewer."
 
-        # Add skill summaries
-        skill_summaries = self._get_skill_summaries(profile)
+        skill_summaries = self._get_skill_summaries(skills)
         if skill_summaries:
             base_prompt += "\n\n## Available Skills\n"
             for skill_id, summary in skill_summaries:
@@ -125,10 +125,10 @@ class ContextBuilder:
 
         return "".join(parts)
 
-    def _get_skill_summaries(self, profile: AgentProfile) -> list[tuple[str, str]]:
+    def _get_skill_summaries(self, skills: tuple[str, ...]) -> list[tuple[str, str]]:
         """Get skill summaries for the profile's skill whitelist."""
         summaries = []
-        for skill_id in profile.skills:
+        for skill_id in skills:
             skill = self.skill_loader.get_skill(skill_id)
             if skill:
                 summaries.append((skill_id, skill.get("description", "")))

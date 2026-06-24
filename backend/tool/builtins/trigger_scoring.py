@@ -55,6 +55,7 @@ async def trigger_scoring(args: TriggerScoringArgs, ctx: ToolContext) -> ToolRes
             memory_root=ctx.memory_root,
             agent_factory=ctx.agent_factory,
             session_store=ctx.session_store,
+            event_queue=ctx.event_queue,
         )
     )
 
@@ -74,6 +75,7 @@ async def _run_scoring_async(
     memory_root: str,
     agent_factory: object,
     session_store: object,
+    event_queue: object = None,
 ) -> None:
     """Run scoring in background, push result via SCORE_UPDATE event."""
     try:
@@ -111,6 +113,13 @@ async def _run_scoring_async(
             payload=score_data,
         )
         session_store.append_event(user_id, session_id, score_event)
+
+        # Push to active SSE stream so frontend sees it in real-time
+        if event_queue is not None:
+            try:
+                await event_queue.put(score_event)
+            except Exception:
+                pass
 
         logger.info("Async scoring completed: %s", score_data)
 

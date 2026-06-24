@@ -506,6 +506,7 @@ class ReActAgent:
                 mcp_clients=self._mcp_clients,
                 agent_factory=self._agent_factory,
                 session_store=self.session_store,
+                event_queue=getattr(self, '_event_queue', None),
             )
 
         return ctx_factory

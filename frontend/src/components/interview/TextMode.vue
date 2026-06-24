@@ -204,7 +204,15 @@ async function sendMessage() {
   triggerAgent(text)
 }
 
-function scrollToBottom() {
+function scrollToTop() {
+	  nextTick(() => {
+	    if (chatContainer.value) {
+	      chatContainer.value.scrollTop = 0
+	    }
+	  })
+	}
+
+	function scrollToBottom() {
   nextTick(() => {
     if (chatContainer.value) {
       chatContainer.value.scrollTop = chatContainer.value.scrollHeight
