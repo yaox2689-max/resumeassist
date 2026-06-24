@@ -120,6 +120,48 @@ class AgentFactory:
         agent._db_session = db_session
         return agent
 
+    def create_lightweight_agent(
+        self,
+        profile_id: str,
+        session_id: str,
+        *,
+        user_id: str = "default",
+    ) -> ReActAgent:
+        """Create a lightweight agent for single-shot tasks (scoring, etc.).
+
+        Skips tools, context builder, and compactor — just LLM + minimal context.
+        """
+        profile = self._get_profile(profile_id)
+        llm = self._create_llm(profile)
+
+        # Minimal context builder that just passes system + user messages
+        class _MinimalContextBuilder:
+            def build_messages(self, _profile, _events, current_input, **_kw):
+                from pathlib import Path
+                prompt_path = Path(_profile.prompt_template)
+                system = prompt_path.read_text(encoding="utf-8") if prompt_path.exists() else ""
+                messages = [{"role": "system", "content": system}]
+                if current_input:
+                    messages.append({"role": "user", "content": current_input})
+                return messages
+
+        class _NoopCompactor:
+            def should_compact(self, *_a): return False
+            async def compact(self, *_a): return "", []
+
+        agent = ReActAgent(
+            profile=profile,
+            llm=llm,
+            context_builder=_MinimalContextBuilder(),
+            compactor=_NoopCompactor(),
+            tool_executor=ToolExecutor(default_timeout=10.0),
+            tools={},
+            session_store=self.session_store,
+            user_id=user_id,
+            session_id=session_id,
+        )
+        return agent
+
     # ── Realtime agent ───────────────────────────────────────────────
 
     def create_realtime_agent(

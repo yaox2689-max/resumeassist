@@ -79,12 +79,11 @@ async def _run_scoring_async(
 ) -> None:
     """Run scoring in background via sub-agent, push result via SCORE_UPDATE event."""
     try:
-        # Create scoring sub-agent
-        agent = agent_factory.create_text_agent(
+        # Create lightweight scoring sub-agent (no tools, no history, fast)
+        agent = agent_factory.create_lightweight_agent(
             profile_id="scoring-agent",
             session_id=f"{session_id}:scoring",
             user_id=user_id,
-            resume_id=resume_id,
         )
 
         prompt = (
