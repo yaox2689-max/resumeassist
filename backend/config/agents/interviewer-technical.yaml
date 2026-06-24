@@ -32,7 +32,7 @@ policy:
 realtime:
   provider: "dashscope_realtime"
   model: "qwen3.5-omni-flash-realtime"
-  voice: "Cindy"  #台湾甜妹
+  voice: "Ethan"  #台湾甜妹
   vad_mode: "semantic"
   vad_threshold: 0.5
   transcription:
