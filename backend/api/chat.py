@@ -270,20 +270,33 @@ async def stream_events(
 
     async def event_generator() -> AsyncIterator[str]:
         # Stream new events only; history is loaded via GET /sessions/{id}/events
+        turn_done = False
+        score_wait_deadline = None
         while True:
             try:
-                # Wait for event with timeout
+                if turn_done and score_wait_deadline is not None:
+                    # After turn.done, keep connection open briefly for
+                    # background SCORE_UPDATE events to arrive
+                    remaining = score_wait_deadline - asyncio.get_event_loop().time()
+                    if remaining <= 0:
+                        break
+                    timeout = min(remaining, 5.0)
+                else:
+                    timeout = 30.0
+
                 event = await asyncio.wait_for(
                     state["event_queue"].get(),
-                    timeout=30.0,
+                    timeout=timeout,
                 )
                 yield f"data: {event.model_dump_json()}\n\n"
 
-                # If turn is done, we can stop
                 if event.type == EventType.TURN_DONE:
-                    break
+                    turn_done = True
+                    # Keep SSE open 15s for background score events
+                    score_wait_deadline = asyncio.get_event_loop().time() + 15.0
             except TimeoutError:
-                # Send keepalive
+                if turn_done:
+                    break
                 yield ": keepalive\n\n"
             except (asyncio.CancelledError, ConnectionResetError, OSError):
                 # Client disconnected — stop cleanly
