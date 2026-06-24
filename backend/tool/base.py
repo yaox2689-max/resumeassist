@@ -50,6 +50,7 @@ class ToolContext:
     mcp_clients: dict = field(default_factory=dict)  # name -> MCPClient for remote tools
     agent_factory: Any = None  # AgentFactory for creating sub-agents
     session_store: Any = None  # SessionStore for reading events
+    event_queue: Any = None  # asyncio.Queue for pushing events to SSE stream
 
 
 @dataclass

@@ -204,7 +204,15 @@ async function sendMessage() {
   triggerAgent(text)
 }
 
-function scrollToBottom() {
+function scrollToTop() {
+	  nextTick(() => {
+	    if (chatContainer.value) {
+	      chatContainer.value.scrollTop = 0
+	    }
+	  })
+	}
+
+	function scrollToBottom() {
   nextTick(() => {
     if (chatContainer.value) {
       chatContainer.value.scrollTop = chatContainer.value.scrollHeight
@@ -297,15 +305,6 @@ onMounted(async () => {
   </div>
 
   <div v-else class="interview-page">
-    <!-- Score Bubble -->
-    <Transition name="score-fade">
-      <div v-if="scoreBubble" class="score-bubble">
-        <span class="score-bubble__label">{{ scoreBubble.dimension === 'technical_depth' ? '技术深度' : scoreBubble.dimension === 'expression_clarity' ? '表达清晰度' : '逻辑完整性' }}</span>
-        <span class="score-bubble__score">{{ scoreBubble.score }}/10</span>
-        <p class="score-bubble__reason">{{ scoreBubble.reason }}</p>
-      </div>
-    </Transition>
-
     <div v-if="historyLoading" class="flex items-center justify-center flex-1">
       <p class="text-ink-muted text-sm">加载聊天记录...</p>
     </div>
@@ -336,6 +335,15 @@ onMounted(async () => {
           <span></span>
         </div>
       </div>
+
+      <!-- Score Toast (inside chat area, bottom center) -->
+      <Transition name="score-toast">
+        <div v-if="scoreBubble" class="score-toast">
+          <span class="score-toast__label">{{ scoreBubble.dimension === 'technical_depth' ? '技术深度' : scoreBubble.dimension === 'expression_clarity' ? '表达清晰度' : '逻辑完整性' }}</span>
+          <span class="score-toast__score">{{ scoreBubble.score }}/10</span>
+          <p class="score-toast__reason">{{ scoreBubble.reason }}</p>
+        </div>
+      </Transition>
     </div>
 
     <div class="chat-input-area">
@@ -699,60 +707,67 @@ onMounted(async () => {
   }
 }
 
-/* Score Bubble */
-.score-bubble {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+/* Score Toast */
+.score-toast {
+  position: sticky;
+  bottom: var(--space-4);
+  align-self: center;
   background: var(--color-white);
   border: 1.5px solid var(--color-primary);
   border-radius: var(--radius-lg);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   box-shadow: var(--shadow-lg);
-  max-width: 280px;
-  z-index: 10;
+  max-width: 340px;
+  width: max-content;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
 }
 
-.score-bubble__label {
+.score-toast__label {
   font-size: var(--text-xs);
   color: var(--color-ink-muted);
-  display: block;
-  margin-bottom: var(--space-1);
+  white-space: nowrap;
 }
 
-.score-bubble__score {
+.score-toast__score {
   font-size: var(--text-xl);
   font-weight: 700;
   color: var(--color-primary);
   font-family: var(--font-heading);
+  white-space: nowrap;
 }
 
-.score-bubble__reason {
+.score-toast__reason {
   font-size: var(--text-xs);
   color: var(--color-ink-light);
-  margin: var(--space-1) 0 0;
+  margin: 0;
   line-height: var(--leading-normal);
+  text-align: left;
+  flex: 1;
 }
 
-.score-fade-enter-active {
+.score-toast-enter-active {
+  transition: all 0.35s var(--ease-out);
+}
+
+.score-toast-leave-active {
   transition: all 0.3s var(--ease-out);
 }
 
-.score-fade-leave-active {
-  transition: all 0.3s var(--ease-out);
-}
-
-.score-fade-enter-from {
+.score-toast-enter-from {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(20px) scale(0.95);
 }
 
-.score-fade-leave-to {
+.score-toast-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(10px);
 }
 
-:global(.dark) .score-bubble {
+:global(.dark) .score-toast {
   background: var(--color-surface);
   border-color: var(--color-primary);
 }

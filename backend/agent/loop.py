@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from collections.abc import AsyncIterator, Callable
 from trace import (
     span_level_for_result,
@@ -35,6 +36,24 @@ from tool.base import ToolContext, ToolMeta, ToolResult
 from tool.executor import ToolCall, ToolExecutor
 
 logger = logging.getLogger(__name__)
+
+# Filler phrases that should NOT trigger scoring
+_FILLER_PATTERN = re.compile(
+    r'^(嗯|哦|额|啊|呢|吧|嘛|噢|喔|好|好的|对|对的|是|是的|ok|okay|行|行的|知道了|了解|明白|收到|谢谢|感谢|嗯嗯|哈哈|呵呵|emmm?|hmm+|yeah+|yep|nope|sure|right)\s*[!！。.~～]*$',
+    re.IGNORECASE,
+)
+
+
+def _is_substantive_answer(text: str) -> bool:
+    """Check if user answer has substantive content worth scoring."""
+    if not text:
+        return False
+    stripped = text.strip()
+    # Too short (single filler word)
+    if _FILLER_PATTERN.match(stripped):
+        return False
+    # Must be at least 10 chars of actual content
+    return len(stripped) >= 10
 
 
 class CancelToken:
@@ -191,9 +210,37 @@ class ReActAgent:
                 turn_output["assistant_text"] = "".join(self._text_buffer)
             turn.update(output=turn_output)
 
+            # Auto-trigger scoring from code (not LLM) for substantive answers
+            if user_input and _is_substantive_answer(user_input):
+                self._fire_scoring(user_input)
+
             # Return to idle
             self._set_state(AgentState.IDLE)
             yield self._make_state_event(AgentState.IDLE)
+
+    def _fire_scoring(self, user_input: str) -> None:
+        """Fire background scoring immediately from code — no LLM decision needed."""
+        event_queue = getattr(self, '_event_queue', None)
+        if not self._agent_factory or not event_queue:
+            return
+        try:
+            from tool.builtins.trigger_scoring import _run_scoring_async
+
+            asyncio.create_task(
+                _run_scoring_async(
+                    dimension="technical_depth",
+                    dialogue=f"候选人: {user_input}",
+                    user_id=self.user_id,
+                    session_id=self.session_id,
+                    resume_id=self._resume_id,
+                    memory_root="storage/memory",
+                    agent_factory=self._agent_factory,
+                    session_store=self.session_store,
+                    event_queue=event_queue,
+                )
+            )
+        except Exception as e:
+            logger.warning("Auto-scoring failed to launch: %s", e)
 
     async def _process_llm_events(
         self, messages: list[dict], event_stream: AsyncIterator[LLMEvent]
@@ -506,6 +553,7 @@ class ReActAgent:
                 mcp_clients=self._mcp_clients,
                 agent_factory=self._agent_factory,
                 session_store=self.session_store,
+                event_queue=getattr(self, '_event_queue', None),
             )
 
         return ctx_factory
