@@ -127,6 +127,10 @@ class ReActAgent:
             self._set_state(AgentState.THINKING)
             yield self._make_state_event(AgentState.THINKING)
 
+            # Fire scoring immediately — runs in parallel with AI response
+            if user_input and _is_substantive_answer(user_input):
+                self._fire_scoring(user_input)
+
             # Get session events for context
             events = self.session_store.read_events(self.user_id, self.session_id)
 
@@ -209,10 +213,6 @@ class ReActAgent:
             if self._text_buffer:
                 turn_output["assistant_text"] = "".join(self._text_buffer)
             turn.update(output=turn_output)
-
-            # Auto-trigger scoring from code (not LLM) for substantive answers
-            if user_input and _is_substantive_answer(user_input):
-                self._fire_scoring(user_input)
 
             # Return to idle
             self._set_state(AgentState.IDLE)
