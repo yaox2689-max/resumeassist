@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator, Callable
 from trace import (
     span_level_for_result,
@@ -32,6 +33,8 @@ from api.schemas import EventType, FrontendEvent
 from storage.session.store import SessionStore
 from tool.base import ToolContext, ToolMeta, ToolResult
 from tool.executor import ToolCall, ToolExecutor
+
+logger = logging.getLogger(__name__)
 
 
 class CancelToken:
@@ -267,14 +270,39 @@ class ReActAgent:
                         "retryable": event.retryable,
                     },
                 )
-                if event.retryable and self.profile.llm.fallback:
-                    fallback_llm = self._create_fallback_llm()
-                    if fallback_llm:
-                        async for fe in self._process_llm_events(
-                            messages, fallback_llm.stream(messages, self._get_tool_schemas())
-                        ):
-                            yield fe
-                        return
+                # Retry logic: 2 attempts on main model, then fallback
+                if event.retryable:
+                    max_retries = 2
+                    for retry_attempt in range(max_retries):
+                        logger.warning(
+                            "LLM error (attempt %s/%s): %s",
+                            retry_attempt + 1,
+                            max_retries,
+                            event.message,
+                        )
+                        await asyncio.sleep(1)  # Brief backoff
+                        try:
+                            async for fe in self._process_llm_events(
+                                messages, self.llm.stream(messages, self._get_tool_schemas())
+                            ):
+                                yield fe
+                            return  # Success, exit retry loop
+                        except Exception as retry_error:
+                            logger.error("Retry %s failed: %s", retry_attempt + 1, retry_error)
+                            if retry_attempt == max_retries - 1:
+                                break  # Exhausted retries, try fallback
+
+                    # If retries exhausted, try fallback
+                    if self.profile.llm.fallback:
+                        fallback_llm = self._create_fallback_llm()
+                        if fallback_llm:
+                            logger.info("Switching to fallback model")
+                            async for fe in self._process_llm_events(
+                                messages, fallback_llm.stream(messages, self._get_tool_schemas())
+                            ):
+                                yield fe
+                            return
+
                 yield FrontendEvent(
                     type=EventType.TURN_DONE,
                     payload={"stop_reason": "error"},
@@ -369,22 +397,27 @@ class ReActAgent:
         """Execute tool calls one by one, yielding events and tool messages.
 
         Yields FrontendEvent for frontend display, and dict messages for the
-        LLM context. This ensures each tool result is visible before the next
-        tool call, so the agent can react to failures.
+        LLM context. Tools are executed in parallel for speed, with results
+        yielded in order after all complete.
         """
+        if not self._current_tool_calls:
+            return
+
+        # Execute all tools in parallel
+        ctx_factory = self._make_ctx_factory()
+        tasks = []
         for call in self._current_tool_calls:
-            with trace_tool(name=call.tool_name, args=call.args) as tool_span:
-                batch = await self.tool_executor.run_parallel(
-                    [call],
-                    self._make_ctx_factory(),
-                    self.tools,
-                    parallel_limit=1,
-                    cancel_token=self.cancel_token,
-                )
-                result = batch[0]
-                tool_span.update(
-                    output=tool_result_output(result),
-                    level=span_level_for_result(result),
+            tasks.append(self._execute_one_tool(call, ctx_factory))
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Yield events in order
+        for call, result in zip(self._current_tool_calls, results):
+            if isinstance(result, Exception):
+                result = ToolResult.err(
+                    code="tool_error",
+                    message=str(result),
+                    summary="Tool execution failed",
                 )
 
             yield FrontendEvent(
@@ -406,14 +439,6 @@ class ReActAgent:
                 },
             )
 
-            # Push score update event for scoring tool results
-            if call.tool_name == "trigger_scoring" and result.status == "ok" and result.data:
-                if result.data.get("score") is not None:
-                    yield FrontendEvent(
-                        type=EventType.SCORE_UPDATE,
-                        payload=result.data,
-                    )
-
             yield {
                 "role": "tool",
                 "tool_call_id": call.tool_call_id,
@@ -421,6 +446,23 @@ class ReActAgent:
                     result.data if result.status == "ok" else result.error
                 ),
             }
+
+    async def _execute_one_tool(self, call: ToolCall, ctx_factory: Callable) -> ToolResult:
+        """Execute a single tool call."""
+        with trace_tool(name=call.tool_name, args=call.args) as tool_span:
+            batch = await self.tool_executor.run_parallel(
+                [call],
+                ctx_factory,
+                self.tools,
+                parallel_limit=1,
+                cancel_token=self.cancel_token,
+            )
+            result = batch[0]
+            tool_span.update(
+                output=tool_result_output(result),
+                level=span_level_for_result(result),
+            )
+        return result
 
     def _build_assistant_tool_use_message(self) -> dict:
         """Build assistant message with tool_calls for the next LLM turn."""

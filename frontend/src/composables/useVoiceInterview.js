@@ -19,6 +19,13 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
   const scoreBubble = ref(null)
   let scoreBubbleTimeout = null
 
+  // Reconnection state
+  const MAX_RECONNECT_ATTEMPTS = 3
+  const RECONNECT_DELAY_MS = 2000
+  let reconnectAttempts = 0
+  let reconnectTimeout = null
+  let intentionalDisconnect = false
+
   let ws = null
   let capture = null
   let player = null
@@ -165,6 +172,7 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
     connecting.value = true
     error.value = null
     hintText.value = '正在连接...'
+    intentionalDisconnect = false
 
     try {
       await loadHistory()
@@ -172,7 +180,10 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
       ws = new WebSocket(api.getVoiceWebSocketUrl(sessionId, { profileId, userId }))
 
       await new Promise((resolve, reject) => {
-        ws.onopen = () => resolve()
+        ws.onopen = () => {
+          reconnectAttempts = 0  // Reset on successful connection
+          resolve()
+        }
         ws.onerror = () => reject(new Error('WebSocket 连接失败'))
         ws.onclose = (evt) => {
           if (!connected.value) {
@@ -189,11 +200,24 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
         }
       }
 
-      ws.onclose = () => {
+      ws.onclose = (evt) => {
+        const wasConnected = connected.value
         connected.value = false
         stopCapture()
         player?.destroy()
         player = null
+
+        // Auto-reconnect if not intentional disconnect and haven't exceeded attempts
+        if (wasConnected && !intentionalDisconnect && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          reconnectAttempts++
+          hintText.value = `连接断开，${RECONNECT_DELAY_MS / 1000}秒后重连... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
+          reconnectTimeout = setTimeout(() => {
+            connect()
+          }, RECONNECT_DELAY_MS)
+        } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          error.value = '连接已断开，请重新开始'
+          hintText.value = error.value
+        }
       }
 
       connected.value = true
@@ -205,10 +229,24 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
       hintText.value = error.value
       ws?.close()
       ws = null
+
+      // Auto-retry on initial connection failure
+      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        reconnectAttempts++
+        hintText.value = `${error.value}，${RECONNECT_DELAY_MS / 1000}秒后重试... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
+        reconnectTimeout = setTimeout(() => {
+          connect()
+        }, RECONNECT_DELAY_MS)
+      }
     }
   }
 
   function disconnect() {
+    intentionalDisconnect = true  // Mark as intentional to prevent auto-reconnect
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout)
+      reconnectTimeout = null
+    }
     stopCapture()
     player?.destroy()
     player = null
@@ -221,6 +259,7 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
     avatarSpeaking.value = false
     isListening.value = false
     waveformActive.value = false
+    reconnectAttempts = 0
   }
 
   function setMuted(muted) {
