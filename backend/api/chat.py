@@ -292,8 +292,8 @@ async def stream_events(
 
                 if event.type == EventType.TURN_DONE:
                     turn_done = True
-                    # Keep SSE open 15s for background score events
-                    score_wait_deadline = asyncio.get_event_loop().time() + 15.0
+                    # Keep SSE open 30s for background score events
+                    score_wait_deadline = asyncio.get_event_loop().time() + 30.0
             except TimeoutError:
                 if turn_done:
                     break

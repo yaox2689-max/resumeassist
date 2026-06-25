@@ -210,7 +210,7 @@ class ReActAgent:
                 turn_output["assistant_text"] = "".join(self._text_buffer)
             turn.update(output=turn_output)
 
-            # Auto-trigger scoring from code (not LLM) for substantive answers
+            # Fire scoring after AI response — answer is now complete
             if user_input and _is_substantive_answer(user_input):
                 self._fire_scoring(user_input)
 
