@@ -1,5 +1,5 @@
 <script setup>
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { api } from '@/api/index.js'
 import AppLogo from '@/components/common/AppLogo.vue'
 import { renderMarkdown } from '@/utils/renderMarkdown.js'
@@ -90,6 +90,7 @@ function showScoreBubble(payload) {
   if (scoreBubbleTimeout) clearTimeout(scoreBubbleTimeout)
   scoreBubbleTimeout = setTimeout(() => {
     scoreBubble.value = null
+    scoreBubbleTimeout = null
   }, 4000)
 }
 
@@ -249,6 +250,14 @@ defineExpose({ getMessages, clearMessages })
 onMounted(async () => {
   if (!props.autoStart) return
   await initializeSession()
+})
+
+onUnmounted(() => {
+  closeSSE()
+  if (scoreBubbleTimeout) {
+    clearTimeout(scoreBubbleTimeout)
+    scoreBubbleTimeout = null
+  }
 })
 </script>
 

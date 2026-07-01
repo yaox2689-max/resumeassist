@@ -247,6 +247,10 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
       clearTimeout(reconnectTimeout)
       reconnectTimeout = null
     }
+    if (scoreBubbleTimeout) {
+      clearTimeout(scoreBubbleTimeout)
+      scoreBubbleTimeout = null
+    }
     stopCapture()
     player?.destroy()
     player = null

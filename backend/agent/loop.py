@@ -379,65 +379,6 @@ class ReActAgent:
                 },
             )
 
-    async def _execute_tools(self) -> list[FrontendEvent]:
-        """Execute tool calls and return result events."""
-        def ctx_factory(call: ToolCall) -> ToolContext:
-            return ToolContext(
-                session=self._session_obj,
-                session_id=self.session_id,
-                user_id=self.user_id,
-                profile=self.profile,
-                cancel_token=self.cancel_token,
-                sandbox_root=self._sandbox_root,
-                db_session=self._db_session,
-            )
-
-        async def execute_one(call: ToolCall) -> ToolResult:
-            with trace_tool(name=call.tool_name, args=call.args) as tool_span:
-                batch = await self.tool_executor.run_parallel(
-                    [call],
-                    ctx_factory,
-                    self.tools,
-                    parallel_limit=1,
-                    cancel_token=self.cancel_token,
-                )
-                result = batch[0]
-                tool_span.update(
-                    output=tool_result_output(result),
-                    level=span_level_for_result(result),
-                )
-                return result
-
-        results = await asyncio.gather(
-            *[execute_one(call) for call in self._current_tool_calls]
-        )
-
-        events = []
-        for call, result in zip(self._current_tool_calls, results):
-            # Tool call end event
-            events.append(FrontendEvent(
-                type=EventType.TOOL_CALL_END,
-                payload={
-                    "tool_call_id": call.tool_call_id,
-                    "tool_name": call.tool_name,
-                },
-            ))
-
-            # Tool result event
-            events.append(FrontendEvent(
-                type=EventType.TOOL_RESULT,
-                payload={
-                    "tool_call_id": call.tool_call_id,
-                    "tool_name": call.tool_name,
-                    "status": result.status,
-                    "data": result.data,
-                    "error": result.error,
-                    "summary": result.summary,
-                },
-            ))
-
-        return events
-
     async def _execute_tools_sequential(
         self,
     ) -> AsyncIterator[FrontendEvent | dict]:
@@ -557,18 +498,6 @@ class ReActAgent:
             )
 
         return ctx_factory
-
-    def _build_tool_messages(self, result_events: list[FrontendEvent]) -> list[dict]:
-        """Build tool result messages for the next LLM call."""
-        messages = []
-        for event in result_events:
-            if event.type == EventType.TOOL_RESULT:
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": event.payload["tool_call_id"],
-                    "content": json.dumps(event.payload.get("data") or event.payload.get("error")),
-                })
-        return messages
 
     def _get_tool_schemas(self) -> list[dict]:
         """Get tool schemas for the LLM."""

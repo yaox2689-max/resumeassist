@@ -117,9 +117,11 @@ export class PcmStreamCapture {
     this.processor = null
     this.source = null
     this.silentGain = null
+    this._stopped = false
   }
 
   async start() {
+    this._stopped = false
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         channelCount: 1,
@@ -128,12 +130,17 @@ export class PcmStreamCapture {
       },
     })
     this.audioContext = new AudioCtx()
+    // Ensure AudioContext is running (requires user gesture)
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume()
+    }
     this.source = this.audioContext.createMediaStreamSource(this.stream)
     this.processor = this.audioContext.createScriptProcessor(4096, 1, 1)
     this.silentGain = this.audioContext.createGain()
     this.silentGain.gain.value = 0
 
     this.processor.onaudioprocess = (e) => {
+      if (this._stopped) return
       const input = e.inputBuffer.getChannelData(0)
       let sum = 0
       for (let i = 0; i < input.length; i++) sum += input[i] * input[i]
@@ -150,6 +157,7 @@ export class PcmStreamCapture {
   }
 
   stop() {
+    this._stopped = true
     this.processor?.disconnect()
     this.source?.disconnect()
     this.silentGain?.disconnect()

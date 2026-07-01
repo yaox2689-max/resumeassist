@@ -93,11 +93,15 @@ async def list_sessions(
 async def get_session(
     session_id: str,
     session_service: SessionService = Depends(get_session_service),
+    current_user: User | None = Depends(get_optional_user),
 ):
     """Get session metadata by ID."""
     session = await session_service.get_session(session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
+    # Require auth for accessing session details
+    if current_user and session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
     return session
 
 
@@ -106,9 +110,9 @@ async def get_session_events(
     session_id: str,
     request: Request,
     session_store: SessionStore = Depends(get_session_store),
+    current_user: User | None = Depends(get_optional_user),
 ):
     """Get all events for a session."""
-    # Get session to find user_id
     from sqlalchemy import select
 
     from storage.db.engine import async_session_factory
@@ -123,6 +127,10 @@ async def get_session_events(
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    # Verify access if user is authenticated
+    if current_user and session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
     events = session_store.read_events(session.user_id, session_id)
     return {"events": [event.model_dump() for event in events]}
 
@@ -132,6 +140,7 @@ async def finalize_session(
     session_id: str,
     request: Request,
     session_service: SessionService = Depends(get_session_service),
+    current_user: User = Depends(get_current_user),
 ):
     """Finalize a session and generate summary using summary-generator agent."""
     try:
@@ -139,6 +148,10 @@ async def finalize_session(
         session_meta = await session_service.get_session(session_id)
         if session_meta is None:
             raise HTTPException(status_code=404, detail="Session not found")
+
+        # Verify the caller owns this session
+        if session_meta.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
         if (
             session_meta.status == "completed"
             and session_meta.summary
@@ -249,10 +262,20 @@ async def finalize_session(
 async def delete_session(
     session_id: str,
     session_service: SessionService = Depends(get_session_service),
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a session and its JSONL file."""
     try:
+        # Verify ownership
+        session_meta = await session_service.get_session(session_id)
+        if session_meta is None:
+            raise HTTPException(status_code=404, detail="Session not found")
+        if session_meta.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
         await session_service.delete_session(session_id)
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

@@ -11,6 +11,7 @@ from sqlalchemy import select
 
 from agent.factory import AgentFactory
 from agent.loop import CancelToken
+from api.auth import decode_token, get_current_user
 from api.deps import get_agent_factory, get_session_store
 from api.schemas import EventType, FrontendEvent
 from storage.db.engine import async_session_factory
@@ -93,12 +94,17 @@ async def send_message(
     request: SendMessageRequest,
     agent_factory: AgentFactory = Depends(get_agent_factory),
     session_store: SessionStore = Depends(get_session_store),
+    current_user=Depends(get_current_user),
 ):
     """Send a user message and trigger agent processing (for SSE stream)."""
     state = _get_or_create_session_state(session_id)
 
     # Load session context from DB
     ctx = await _load_session_context(session_id)
+
+    # Verify the caller owns this session
+    if ctx["user_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     # Get session events
     events = session_store.read_events(ctx["user_id"], session_id)
@@ -244,8 +250,9 @@ async def _run_agent(
 @router.post("/sessions/{session_id}/interrupt")
 async def interrupt_agent(
     session_id: str,
+    current_user=Depends(get_current_user),
 ):
-    """Interrupt the running agent."""
+    """Interrupt the running agent. Requires authentication."""
     state = _get_or_create_session_state(session_id)
     state["cancel_token"].cancel()
     return {"status": "ok", "session_id": session_id}
@@ -254,12 +261,29 @@ async def interrupt_agent(
 @router.get("/sessions/{session_id}/stream")
 async def stream_events(
     session_id: str,
+    token: str | None = None,
     session_store: SessionStore = Depends(get_session_store),
 ):
-    """SSE endpoint for streaming events."""
+    """SSE endpoint for streaming events.
+
+    EventSource does not support custom headers, so auth is via query parameter token.
+    """
+    # Validate token from query param
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing authentication token")
+    try:
+        payload = decode_token(token)
+        token_user_id = payload.get("user_id")
+        if not token_user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
     state = _get_or_create_session_state(session_id)
 
-    # Load session to get actual user_id
+    # Load session to get actual user_id and verify access
     async with async_session_factory() as db:
         result = await db.execute(
             select(Session).where(Session.id == session_id)
@@ -267,43 +291,49 @@ async def stream_events(
         session = result.scalar_one_or_none()
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
+    if session.user_id != token_user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     async def event_generator() -> AsyncIterator[str]:
         # Stream new events only; history is loaded via GET /sessions/{id}/events
         turn_done = False
         score_wait_deadline = None
-        while True:
-            try:
-                if turn_done and score_wait_deadline is not None:
-                    # After turn.done, keep connection open briefly for
-                    # background SCORE_UPDATE events to arrive
-                    remaining = score_wait_deadline - asyncio.get_event_loop().time()
-                    if remaining <= 0:
+        try:
+            while True:
+                try:
+                    if turn_done and score_wait_deadline is not None:
+                        # After turn.done, keep connection open briefly for
+                        # background SCORE_UPDATE events to arrive
+                        remaining = score_wait_deadline - asyncio.get_event_loop().time()
+                        if remaining <= 0:
+                            break
+                        timeout = min(remaining, 5.0)
+                    else:
+                        timeout = 30.0
+
+                    event = await asyncio.wait_for(
+                        state["event_queue"].get(),
+                        timeout=timeout,
+                    )
+                    yield f"data: {event.model_dump_json()}\n\n"
+
+                    if event.type == EventType.TURN_DONE:
+                        turn_done = True
+                        # Keep SSE open 30s for background score events
+                        score_wait_deadline = asyncio.get_event_loop().time() + 30.0
+                except TimeoutError:
+                    if turn_done:
                         break
-                    timeout = min(remaining, 5.0)
-                else:
-                    timeout = 30.0
-
-                event = await asyncio.wait_for(
-                    state["event_queue"].get(),
-                    timeout=timeout,
-                )
-                yield f"data: {event.model_dump_json()}\n\n"
-
-                if event.type == EventType.TURN_DONE:
-                    turn_done = True
-                    # Keep SSE open 30s for background score events
-                    score_wait_deadline = asyncio.get_event_loop().time() + 30.0
-            except TimeoutError:
-                if turn_done:
+                    yield ": keepalive\n\n"
+                except (asyncio.CancelledError, ConnectionResetError, OSError):
+                    # Client disconnected — stop cleanly
                     break
-                yield ": keepalive\n\n"
-            except (asyncio.CancelledError, ConnectionResetError, OSError):
-                # Client disconnected — stop cleanly
-                break
-            except Exception as e:
-                logger.error(f"SSE error: {e}")
-                break
+                except Exception as e:
+                    logger.error(f"SSE error: {e}")
+                    break
+        finally:
+            # Cleanup session state when SSE disconnects
+            _active_sessions.pop(session_id, None)
 
     return StreamingResponse(
         event_generator(),

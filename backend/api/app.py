@@ -18,6 +18,7 @@ from api.resume_analysis import router as resume_router
 from api.sessions import router as api_router
 from api.tasks import router as tasks_router
 from api.ws import router as ws_router
+from config.settings import settings
 from storage.db.engine import init_db
 from storage.session.store import SessionStore
 from tool.builtins import TOOLS
@@ -27,6 +28,13 @@ from tool.registry import ToolRegistry
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
+    # Warn about default JWT secret
+    if settings.JWT_SECRET == "resumeast-jwt-secret-change-in-production":
+        import warnings
+        warnings.warn(
+            "Using default JWT_SECRET. Set a custom JWT_SECRET in .env for production."
+        )
+
     # Initialize database
     await init_db()
 
