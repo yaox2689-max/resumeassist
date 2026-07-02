@@ -6,7 +6,7 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from api.auth import User, get_optional_user
+from api.auth import User, get_current_user, get_optional_user
 from api.schemas import (
     CreateSessionRequest,
     CreateSessionResponse,
