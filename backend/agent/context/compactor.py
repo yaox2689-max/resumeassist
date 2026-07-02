@@ -65,6 +65,17 @@ class ContextCompactor:
         })
         compacted.extend(recent_messages)
 
+        # Log compression metrics
+        before = self.estimate_tokens(messages)
+        after = self.estimate_tokens(compacted)
+        savings = (1 - after / before) * 100 if before > 0 else 0
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(
+            "[COMPACT] Token压缩: %d → %d, 节省 %.0f%%, 保留 %d 条最近消息, 摘要长度 %d 字",
+            before, after, savings, len(recent_messages), len(summary_text),
+        )
+
         return summary_text, compacted
 
     _SUMMARY_MAX_CHARS = 3000
