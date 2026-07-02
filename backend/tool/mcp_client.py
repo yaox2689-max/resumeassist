@@ -75,6 +75,10 @@ class MCPClient:
 
         # Resolve env vars
         resolved_env = {**os.environ}
+        # Remove proxy env vars that might interfere with subprocess
+        for key in list(resolved_env.keys()):
+            if key.lower() in ("http_proxy", "https_proxy", "all_proxy", "no_proxy"):
+                del resolved_env[key]
         for key, value in env.items():
             if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
                 env_var = value[2:-1]
