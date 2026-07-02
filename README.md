@@ -147,7 +147,8 @@ THINKING ──[>80k token]──► COMPACTING ──► THINKING
 cd backend
 uv sync                          # 安装依赖（推荐 uv）
 cp .env.example .env             # 填入 LLM API Key
-uv run uvicorn api.app:app --reload --host 0.0.0.0 --port 8000
+#uv run uvicorn api.app:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn api.app:app --host 0.0.0.0 --port 8000
 ```
 
 ### 前端
