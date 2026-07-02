@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
@@ -65,19 +66,15 @@ async def lifespan(app: FastAPI):
     # Initialize session store
     session_store = SessionStore()
 
-    # Start MCP clients (collect unique server configs from all profiles)
+    # Connect MCP servers (with individual timeout so one failure doesn't block startup)
     mcp_clients: dict[str, object] = {}
-    seen_servers: set[str] = set()
     for profile in profiles.values():
         for server_config in profile.mcp_servers:
-            if server_config.name in seen_servers:
-                continue
-            seen_servers.add(server_config.name)
             try:
                 from tool.mcp_client import MCPClient
                 client = MCPClient(server_config.model_dump())
                 print(f"Connecting MCP server: {server_config.name}...")
-                await client.connect()
+                await asyncio.wait_for(client.connect(), timeout=10.0)
                 mcp_clients[server_config.name] = client
                 print(f"Connected MCP server: {server_config.name} ({len(client.get_tool_metas())} tools)")
             except Exception as e:
