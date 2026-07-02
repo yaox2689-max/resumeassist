@@ -12,6 +12,7 @@ const {
   interviewTypes,
   selectedResume,
   selectedType,
+  jdContent,
   isConfigValid,
   starting,
   handleStartInterview: startInterview,
@@ -115,6 +116,20 @@ function handleClose() {
               </div>
             </label>
           </div>
+        </div>
+
+        <div class="config-step">
+          <div class="config-step__header">
+            <div class="config-step__number">3</div>
+            <span class="config-step__title">岗位描述（可选）</span>
+          </div>
+          <p class="text-xs text-ink-muted mb-2">粘贴目标岗位的 JD，面试官会据此进行针对性提问</p>
+          <textarea
+            v-model="jdContent"
+            rows="3"
+            class="w-full px-3 py-2 rounded-lg border border-border-light dark:border-border bg-base text-ink text-sm resize-none focus:outline-none focus:border-primary transition-colors"
+            placeholder="粘贴岗位描述内容..."
+          ></textarea>
         </div>
       </div>
 
