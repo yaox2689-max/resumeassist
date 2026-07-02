@@ -254,8 +254,17 @@ class ReActAgent:
 
             async def _with_cleanup():
                 try:
+                    # Determine scoring dimensions from profile type
+                    profile_id = self.profile.id
+                    if "behavior" in profile_id:
+                        dims = ["expression_clarity", "logical_completeness"]
+                    elif "technical" in profile_id:
+                        dims = ["technical_depth", "logical_completeness"]
+                    else:  # comprehensive
+                        dims = ["technical_depth", "expression_clarity", "logical_completeness"]
+
                     await _run_scoring_async(
-                        dimension="technical_depth",
+                        dimensions=dims,
                         dialogue=dialogue,
                         user_id=self.user_id,
                         session_id=self.session_id,

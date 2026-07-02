@@ -68,7 +68,7 @@ async def trigger_scoring(args: TriggerScoringArgs, ctx: ToolContext) -> ToolRes
 
 
 async def _run_scoring_async(
-    dimension: str,
+    dimensions: list[str],
     dialogue: str,
     user_id: str,
     session_id: str,
@@ -87,8 +87,9 @@ async def _run_scoring_async(
             user_id=user_id,
         )
 
+        dims_str = "、".join(dimensions)
         prompt = (
-            f"请对以下回答进行评分，评分维度：{dimension}\n\n"
+            f"请对以下回答进行评分，评分维度：{dims_str}\n\n"
             f"对话内容：\n{dialogue}"
         )
 
@@ -96,8 +97,6 @@ async def _run_scoring_async(
         async for event in agent.run(prompt):
             if event.type == EventType.ASSISTANT_TEXT_DONE:
                 result_text = event.payload.get("text", "")
-
-        logger.info("[SCORING] agent.run completed, raw result_text=%.200s", result_text)
 
         # Parse result — strip markdown fences if present
         try:
@@ -108,37 +107,54 @@ async def _run_scoring_async(
                 raw = raw.strip()
             score_data = json.loads(raw)
         except json.JSONDecodeError:
-            logger.info("[SCORING] JSON decode failed on raw: %.200s", result_text)
             brace = re.search(r'\{.*\}', result_text, re.DOTALL)
             if brace:
                 try:
                     score_data = json.loads(brace.group())
                 except json.JSONDecodeError:
-                    score_data = {"score": None, "reason": "评分结果解析失败"}
+                    score_data = {"dimensions": []}
             else:
-                score_data = {"score": None, "reason": "评分结果解析失败"}
+                score_data = {"dimensions": []}
 
-        logger.info("[SCORING] score_data=%s, pushing SCORE_UPDATE event", score_data)
+        # Handle old single-dimension format for backward compat
+        if "dimensions" not in score_data:
+            if score_data.get("score") is not None:
+                score_data = {"dimensions": [score_data]}
+            else:
+                score_data = {"dimensions": []}
 
-        # Write to memory
-        if score_data.get("score") is not None:
-            _write_score_to_memory(user_id, resume_id, memory_root, score_data)
+        # Write to memory for each valid score
+        for dim in score_data.get("dimensions", []):
+            if dim.get("score") is not None:
+                _write_score_to_memory(user_id, resume_id, memory_root, dim)
 
-        # Push SCORE_UPDATE event to session store (frontend picks it up)
-        score_event = FrontendEvent(
-            type=EventType.SCORE_UPDATE,
-            payload=score_data,
-        )
-        session_store.append_event(user_id, session_id, score_event)
+        # Push SCORE_UPDATE event for each dimension
+        for dim in score_data.get("dimensions", []):
+            score_event = FrontendEvent(
+                type=EventType.SCORE_UPDATE,
+                payload=dim,
+            )
+            session_store.append_event(user_id, session_id, score_event)
 
-        # Push to active SSE stream so frontend sees it in real-time
-        if event_queue is not None:
-            try:
-                await event_queue.put(score_event)
-            except Exception:
-                pass
+            if event_queue is not None:
+                try:
+                    await event_queue.put(score_event)
+                except Exception:
+                    pass
 
-        logger.info("Async scoring completed: %s", score_data)
+            logger.info("Scoring completed: %s - %s", dim.get("dimension"), dim)
+
+        if not score_data.get("dimensions"):
+            score_event = FrontendEvent(
+                type=EventType.SCORE_UPDATE,
+                payload={"score": None, "reason": "非技术性回答，跳过评分"},
+            )
+            session_store.append_event(user_id, session_id, score_event)
+            if event_queue is not None:
+                try:
+                    await event_queue.put(score_event)
+                except Exception:
+                    pass
 
     except Exception as e:
         logger.error("Async scoring failed: %s", e)
