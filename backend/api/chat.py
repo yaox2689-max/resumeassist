@@ -57,7 +57,7 @@ def _get_or_create_session_state(session_id: str) -> dict:
 async def _load_session_context(session_id: str) -> dict:
     """Load session metadata and resume content from DB.
 
-    Returns dict with user_id, profile_id, resume_id, resume_content.
+    Returns dict with user_id, profile_id, resume_id, resume_content, jd_content.
     Raises HTTPException if session not found.
     """
     async with async_session_factory() as db:
@@ -74,6 +74,7 @@ async def _load_session_context(session_id: str) -> dict:
             "profile_id": session.profile_id,
             "resume_id": session.resume_id,
             "resume_content": "",
+            "jd_content": session.jd_content or "",
         }
 
         # Load resume content if available
@@ -137,6 +138,7 @@ async def send_message(
                 user_id=ctx["user_id"],
                 resume_content=ctx["resume_content"],
                 resume_id=ctx["resume_id"],
+                jd_content=ctx["jd_content"],
             )
             agent.cancel_token = state["cancel_token"]
             agent._event_queue = state["event_queue"]
@@ -187,6 +189,7 @@ async def chat(
             user_id=ctx["user_id"],
             resume_content=ctx["resume_content"],
             resume_id=ctx["resume_id"],
+            jd_content=ctx["jd_content"],
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

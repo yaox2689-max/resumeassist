@@ -24,6 +24,7 @@ class ContextBuilder:
         resume_content: str | None = None,
         user_id: str | None = None,
         resume_id: str | None = None,
+        jd_content: str | None = None,
     ) -> list[dict]:
         """Build messages list for LLM from profile and session events.
 
@@ -34,16 +35,18 @@ class ContextBuilder:
             resume_content: Resume content to inject into system prompt
             user_id: User ID for memory lookup
             resume_id: Resume ID for memory lookup
+            jd_content: Job description content to inject into system prompt
 
         Returns:
             List of message dicts for LLM API
         """
         messages = []
 
-        # 1. System prompt (with resume + memory injection)
+        # 1. System prompt (with resume + memory + JD injection)
         system_prompt = self._build_system_prompt(
             profile, resume_content=resume_content,
             user_id=user_id, resume_id=resume_id,
+            jd_content=jd_content,
         )
         messages.append({"role": "system", "content": system_prompt})
 
@@ -63,8 +66,9 @@ class ContextBuilder:
         resume_content: str | None = None,
         user_id: str | None = None,
         resume_id: str | None = None,
+        jd_content: str | None = None,
     ) -> str:
-        """Build the system prompt from profile, skills, resume, and memory."""
+        """Build the system prompt from profile, skills, resume, JD, and memory."""
         # Cached: base prompt template + skill summaries
         base_prompt = self._get_cached_base_prompt(
             profile.id, profile.prompt_template, tuple(profile.skills)
@@ -73,6 +77,10 @@ class ContextBuilder:
         # Cached: resume content (per resume_id)
         if resume_content:
             base_prompt += self._get_cached_resume_section(resume_content, resume_id)
+
+        # JD content (not cached — passed per request)
+        if jd_content:
+            base_prompt += f"\n\n## 岗位描述（JD）\n{jd_content}\n"
 
         # NOT cached: memory files (updated by tools in real-time)
         if user_id and resume_id:

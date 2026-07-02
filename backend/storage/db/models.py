@@ -43,6 +43,7 @@ class Session(Base):
     turn_count = Column(Integer, nullable=False, default=0)
     summary = Column(Text, nullable=True)  # JSON string of summary dict
     resume_id = Column(String, ForeignKey("resumes.id"), nullable=True, index=True)
+    jd_content = Column(Text, nullable=True)  # Raw job description text
     audio_seconds_in = Column(Float, nullable=False, default=0.0)
     audio_seconds_out = Column(Float, nullable=False, default=0.0)
 
