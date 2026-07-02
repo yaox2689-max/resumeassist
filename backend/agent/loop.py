@@ -212,7 +212,11 @@ class ReActAgent:
 
             # Fire scoring after AI response — answer is now complete
             if user_input and _is_substantive_answer(user_input):
+                logger.info("[SCORING] Calling _fire_scoring for: %.50s", user_input)
                 self._fire_scoring(user_input)
+            else:
+                logger.info("[SCORING] Skipped — _is_substantive_answer=%s, len=%d",
+                            bool(user_input), len(user_input.strip()) if user_input else 0)
 
             # Return to idle
             self._set_state(AgentState.IDLE)
@@ -221,6 +225,10 @@ class ReActAgent:
     def _fire_scoring(self, user_input: str) -> None:
         """Fire background scoring immediately from code — no LLM decision needed."""
         event_queue = getattr(self, '_event_queue', None)
+        if not self._agent_factory:
+            logger.info("[SCORING] _fire_scoring skipped: no agent_factory")
+        if not event_queue:
+            logger.info("[SCORING] _fire_scoring skipped: no event_queue")
         if not self._agent_factory or not event_queue:
             return
         try:
@@ -236,6 +244,7 @@ class ReActAgent:
                         last_question = text
                         break
             dialogue = f"面试官: {last_question}\n候选人: {user_input}" if last_question else f"候选人: {user_input}"
+            logger.info("[SCORING] Creating scoring task, dialogue=%.80s", dialogue)
 
             asyncio.create_task(
                 _run_scoring_async(

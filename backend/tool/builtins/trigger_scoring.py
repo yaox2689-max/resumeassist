@@ -97,6 +97,8 @@ async def _run_scoring_async(
             if event.type == EventType.ASSISTANT_TEXT_DONE:
                 result_text = event.payload.get("text", "")
 
+        logger.info("[SCORING] agent.run completed, raw result_text=%.200s", result_text)
+
         # Parse result — strip markdown fences if present
         try:
             raw = result_text.strip()
@@ -106,6 +108,7 @@ async def _run_scoring_async(
                 raw = raw.strip()
             score_data = json.loads(raw)
         except json.JSONDecodeError:
+            logger.info("[SCORING] JSON decode failed on raw: %.200s", result_text)
             brace = re.search(r'\{.*\}', result_text, re.DOTALL)
             if brace:
                 try:
@@ -114,6 +117,8 @@ async def _run_scoring_async(
                     score_data = {"score": None, "reason": "评分结果解析失败"}
             else:
                 score_data = {"score": None, "reason": "评分结果解析失败"}
+
+        logger.info("[SCORING] score_data=%s, pushing SCORE_UPDATE event", score_data)
 
         # Write to memory
         if score_data.get("score") is not None:
