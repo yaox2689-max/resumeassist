@@ -45,12 +45,15 @@ class MCPClient:
         else:
             raise ValueError(f"Unsupported MCP transport: {self._transport}")
 
-        # Initialize handshake
-        await self._send_request("initialize", {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "resumeast", "version": "1.0.0"},
-        })
+        # Initialize handshake with timeout
+        await asyncio.wait_for(
+            self._send_request("initialize", {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "resumeast", "version": "1.0.0"},
+            }),
+            timeout=10.0,
+        )
 
         # Send initialized notification
         await self._send_notification("notifications/initialized", {})
