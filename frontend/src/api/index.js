@@ -152,7 +152,10 @@ export const api = {
   },
 
   streamEvents(sessionId) {
-    return new EventSource(`/api/sessions/${sessionId}/stream`)
+    const { getToken } = useAuth()
+    const token = getToken()
+    const params = token ? `?token=${encodeURIComponent(token)}` : ''
+    return new EventSource(`/api/sessions/${sessionId}/stream${params}`)
   },
 
   finalizeSession(sessionId) {

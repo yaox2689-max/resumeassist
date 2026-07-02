@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from typing import Any
 
 from tool.base import ToolMeta, ToolResult
@@ -30,6 +31,7 @@ class MCPClient:
         self._request_id = 0
         self._pending: dict[int, asyncio.Future] = {}
         self._read_task: asyncio.Task | None = None
+        self._stderr_task: asyncio.Task | None = None
         self._tool_filter: set[str] | None = None
 
         # Tool whitelist from config
@@ -69,7 +71,6 @@ class MCPClient:
             raise ValueError(f"MCP Server '{self._name}' has no command configured")
 
         # Resolve env vars
-        import os
         resolved_env = {**os.environ}
         for key, value in env.items():
             if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
@@ -87,11 +88,22 @@ class MCPClient:
             env=resolved_env,
         )
 
+        # Drain stderr in background to prevent pipe buffer deadlock
+        self._stderr_task = asyncio.create_task(self._drain_stderr())
+
         self._reader = self._process.stdout
         self._writer = self._process.stdin
 
         # Start background reader
         self._read_task = asyncio.create_task(self._read_loop())
+
+    async def _drain_stderr(self) -> None:
+        """Read and discard stderr to prevent pipe buffer deadlock."""
+        try:
+            while self._process and self._process.returncode is None:
+                await self._process.stderr.readline()
+        except Exception:
+            pass
 
     async def _read_loop(self) -> None:
         """Background task to read JSON-RPC responses from the server."""
@@ -133,7 +145,7 @@ class MCPClient:
             "params": params,
         }
 
-        future: asyncio.Future[dict] = asyncio.get_event_loop().create_future()
+        future: asyncio.Future[dict] = asyncio.get_running_loop().create_future()
         self._pending[msg_id] = future
 
         data = json.dumps(msg) + "\n"
@@ -244,6 +256,13 @@ class MCPClient:
             self._read_task.cancel()
             try:
                 await self._read_task
+            except asyncio.CancelledError:
+                pass
+
+        if self._stderr_task:
+            self._stderr_task.cancel()
+            try:
+                await self._stderr_task
             except asyncio.CancelledError:
                 pass
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { api } from '@/api/index.js'
 import AppLogo from '@/components/common/AppLogo.vue'
 import { renderMarkdown } from '@/utils/renderMarkdown.js'
@@ -41,6 +41,15 @@ async function loadHistory() {
     messages.value = loaded
     if (loaded.length > 0) {
       started.value = true
+    }
+
+    // Restore latest score bubble from history
+    const events = data.events || []
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (events[i].type === 'score.update') {
+        showScoreBubble(events[i].payload)
+        break
+      }
     }
   } catch (e) {
     console.error('Failed to load session history:', e)
@@ -90,6 +99,7 @@ function showScoreBubble(payload) {
   if (scoreBubbleTimeout) clearTimeout(scoreBubbleTimeout)
   scoreBubbleTimeout = setTimeout(() => {
     scoreBubble.value = null
+    scoreBubbleTimeout = null
   }, 4000)
 }
 
@@ -249,6 +259,14 @@ defineExpose({ getMessages, clearMessages })
 onMounted(async () => {
   if (!props.autoStart) return
   await initializeSession()
+})
+
+onUnmounted(() => {
+  closeSSE()
+  if (scoreBubbleTimeout) {
+    clearTimeout(scoreBubbleTimeout)
+    scoreBubbleTimeout = null
+  }
 })
 </script>
 

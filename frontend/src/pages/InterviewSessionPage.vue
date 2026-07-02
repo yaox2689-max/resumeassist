@@ -133,6 +133,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopTimer()
+  // TextMode and VoiceMode clean up their own connections on unmount
 })
 </script>
 
