@@ -76,6 +76,7 @@ async def lifespan(app: FastAPI):
             try:
                 from tool.mcp_client import MCPClient
                 client = MCPClient(server_config.model_dump())
+                print(f"Connecting MCP server: {server_config.name}...")
                 await client.connect()
                 mcp_clients[server_config.name] = client
                 print(f"Connected MCP server: {server_config.name} ({len(client.get_tool_metas())} tools)")
