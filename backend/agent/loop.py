@@ -225,11 +225,15 @@ class ReActAgent:
     def _fire_scoring(self, user_input: str) -> None:
         """Fire background scoring immediately from code — no LLM decision needed."""
         event_queue = getattr(self, '_event_queue', None)
+        # Prevent recursive scoring (scoring agent triggering scoring on itself)
+        if getattr(self, '_scoring_in_progress', False):
+            logger.debug("[SCORING] Skipped: already in scoring context")
+            return
         if not self._agent_factory:
-            logger.info("[SCORING] _fire_scoring skipped: no agent_factory")
+            logger.debug("[SCORING] _fire_scoring skipped: no agent_factory")
+            return
         if not event_queue:
-            logger.info("[SCORING] _fire_scoring skipped: no event_queue")
-        if not self._agent_factory or not event_queue:
+            logger.debug("[SCORING] _fire_scoring skipped: no event_queue")
             return
         try:
             from tool.builtins.trigger_scoring import _run_scoring_async
@@ -244,23 +248,29 @@ class ReActAgent:
                         last_question = text
                         break
             dialogue = f"面试官: {last_question}\n候选人: {user_input}" if last_question else f"候选人: {user_input}"
+            self._scoring_in_progress = True
             logger.info("[SCORING] Creating scoring task, dialogue=%.80s", dialogue)
 
-            asyncio.create_task(
-                _run_scoring_async(
-                    dimension="technical_depth",
-                    dialogue=dialogue,
-                    user_id=self.user_id,
-                    session_id=self.session_id,
-                    resume_id=self._resume_id,
-                    memory_root="storage/memory",
-                    agent_factory=self._agent_factory,
-                    session_store=self.session_store,
-                    event_queue=event_queue,
-                )
-            )
+            async def _with_cleanup():
+                try:
+                    await _run_scoring_async(
+                        dimension="technical_depth",
+                        dialogue=dialogue,
+                        user_id=self.user_id,
+                        session_id=self.session_id,
+                        resume_id=self._resume_id,
+                        memory_root="storage/memory",
+                        agent_factory=self._agent_factory,
+                        session_store=self.session_store,
+                        event_queue=event_queue,
+                    )
+                finally:
+                    self._scoring_in_progress = False
+
+            asyncio.create_task(_with_cleanup())
         except Exception as e:
             logger.warning("Auto-scoring failed to launch: %s", e)
+            self._scoring_in_progress = False
 
     async def _process_llm_events(
         self, messages: list[dict], event_stream: AsyncIterator[LLMEvent]
