@@ -215,7 +215,11 @@ class ReActAgent:
 
             # Fire scoring after AI response — answer is now complete
             if user_input and _is_substantive_answer(user_input):
+                logger.info("[SCORING] Calling _fire_scoring for: %.50s", user_input)
                 self._fire_scoring(user_input)
+            else:
+                logger.info("[SCORING] Skipped — _is_substantive_answer=%s, len=%d",
+                            bool(user_input), len(user_input.strip()) if user_input else 0)
 
             # Return to idle
             self._set_state(AgentState.IDLE)
@@ -223,27 +227,51 @@ class ReActAgent:
 
     def _fire_scoring(self, user_input: str) -> None:
         """Fire background scoring immediately from code — no LLM decision needed."""
+        # Prevent recursive scoring (scoring agent triggering scoring on itself)
+        if getattr(self, '_scoring_in_progress', False):
+            logger.debug("[SCORING] Skipped: already in scoring context")
+            return
         event_queue = getattr(self, '_event_queue', None)
-        if not self._agent_factory or not event_queue:
+        if not self._agent_factory:
+            return
+        if not event_queue:
             return
         try:
             from tool.builtins.trigger_scoring import _run_scoring_async
 
-            asyncio.create_task(
-                _run_scoring_async(
-                    dimension="technical_depth",
-                    dialogue=f"候选人: {user_input}",
-                    user_id=self.user_id,
-                    session_id=self.session_id,
-                    resume_id=self._resume_id,
-                    memory_root="storage/memory",
-                    agent_factory=self._agent_factory,
-                    session_store=self.session_store,
-                    event_queue=event_queue,
-                )
-            )
+            # Include the interviewer's last question for context
+            events = self.session_store.read_events(self.user_id, self.session_id)
+            last_question = ""
+            for ev in reversed(events):
+                if ev.type in (EventType.ASSISTANT_TEXT_DONE, EventType.ASSISTANT_TRANSCRIPT_DONE):
+                    text = (ev.payload.get("text") or "").strip()
+                    if text:
+                        last_question = text
+                        break
+            dialogue = f"面试官: {last_question}\n候选人: {user_input}" if last_question else f"候选人: {user_input}"
+            self._scoring_in_progress = True
+            logger.info("[SCORING] Creating scoring task, dialogue=%.80s", dialogue)
+
+            async def _with_cleanup():
+                try:
+                    await _run_scoring_async(
+                        dimension="technical_depth",
+                        dialogue=dialogue,
+                        user_id=self.user_id,
+                        session_id=self.session_id,
+                        resume_id=self._resume_id,
+                        memory_root="storage/memory",
+                        agent_factory=self._agent_factory,
+                        session_store=self.session_store,
+                        event_queue=event_queue,
+                    )
+                finally:
+                    self._scoring_in_progress = False
+
+            asyncio.create_task(_with_cleanup())
         except Exception as e:
             logger.warning("Auto-scoring failed to launch: %s", e)
+            self._scoring_in_progress = False
 
     async def _process_llm_events(
         self, messages: list[dict], event_stream: AsyncIterator[LLMEvent]
@@ -382,65 +410,6 @@ class ReActAgent:
                 },
             )
 
-    async def _execute_tools(self) -> list[FrontendEvent]:
-        """Execute tool calls and return result events."""
-        def ctx_factory(call: ToolCall) -> ToolContext:
-            return ToolContext(
-                session=self._session_obj,
-                session_id=self.session_id,
-                user_id=self.user_id,
-                profile=self.profile,
-                cancel_token=self.cancel_token,
-                sandbox_root=self._sandbox_root,
-                db_session=self._db_session,
-            )
-
-        async def execute_one(call: ToolCall) -> ToolResult:
-            with trace_tool(name=call.tool_name, args=call.args) as tool_span:
-                batch = await self.tool_executor.run_parallel(
-                    [call],
-                    ctx_factory,
-                    self.tools,
-                    parallel_limit=1,
-                    cancel_token=self.cancel_token,
-                )
-                result = batch[0]
-                tool_span.update(
-                    output=tool_result_output(result),
-                    level=span_level_for_result(result),
-                )
-                return result
-
-        results = await asyncio.gather(
-            *[execute_one(call) for call in self._current_tool_calls]
-        )
-
-        events = []
-        for call, result in zip(self._current_tool_calls, results):
-            # Tool call end event
-            events.append(FrontendEvent(
-                type=EventType.TOOL_CALL_END,
-                payload={
-                    "tool_call_id": call.tool_call_id,
-                    "tool_name": call.tool_name,
-                },
-            ))
-
-            # Tool result event
-            events.append(FrontendEvent(
-                type=EventType.TOOL_RESULT,
-                payload={
-                    "tool_call_id": call.tool_call_id,
-                    "tool_name": call.tool_name,
-                    "status": result.status,
-                    "data": result.data,
-                    "error": result.error,
-                    "summary": result.summary,
-                },
-            ))
-
-        return events
-
     async def _execute_tools_sequential(
         self,
     ) -> AsyncIterator[FrontendEvent | dict]:
@@ -560,18 +529,6 @@ class ReActAgent:
             )
 
         return ctx_factory
-
-    def _build_tool_messages(self, result_events: list[FrontendEvent]) -> list[dict]:
-        """Build tool result messages for the next LLM call."""
-        messages = []
-        for event in result_events:
-            if event.type == EventType.TOOL_RESULT:
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": event.payload["tool_call_id"],
-                    "content": json.dumps(event.payload.get("data") or event.payload.get("error")),
-                })
-        return messages
 
     def _get_tool_schemas(self) -> list[dict]:
         """Get tool schemas for the LLM."""

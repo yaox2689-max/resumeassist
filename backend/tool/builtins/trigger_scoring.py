@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 
 from pydantic import BaseModel
 
@@ -96,11 +97,28 @@ async def _run_scoring_async(
             if event.type == EventType.ASSISTANT_TEXT_DONE:
                 result_text = event.payload.get("text", "")
 
-        # Parse result
+        logger.info("[SCORING] agent.run completed, raw result_text=%.200s", result_text)
+
+        # Parse result — strip markdown fences if present
         try:
-            score_data = json.loads(result_text)
+            raw = result_text.strip()
+            if raw.startswith("```"):
+                raw = re.sub(r'^```(?:json)?\s*\n?', '', raw)
+                raw = re.sub(r'\n?\s*```$', '', raw)
+                raw = raw.strip()
+            score_data = json.loads(raw)
         except json.JSONDecodeError:
-            score_data = {"score": None, "reason": "评分结果解析失败"}
+            logger.info("[SCORING] JSON decode failed on raw: %.200s", result_text)
+            brace = re.search(r'\{.*\}', result_text, re.DOTALL)
+            if brace:
+                try:
+                    score_data = json.loads(brace.group())
+                except json.JSONDecodeError:
+                    score_data = {"score": None, "reason": "评分结果解析失败"}
+            else:
+                score_data = {"score": None, "reason": "评分结果解析失败"}
+
+        logger.info("[SCORING] score_data=%s, pushing SCORE_UPDATE event", score_data)
 
         # Write to memory
         if score_data.get("score") is not None:

@@ -68,6 +68,15 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
     const data = await api.getSessionEvents(sessionId)
     const last = lastTranscriptEntry(data.events || [])
     transcriptEntries.value = last ? [last] : []
+
+    // Restore latest score bubble from history
+    const events = data.events || []
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (events[i].type === 'score.update') {
+        showScoreBubble(events[i].payload)
+        break
+      }
+    }
   }
 
   async function startCapture() {
@@ -246,6 +255,10 @@ export function useVoiceInterview({ sessionId, profileId, userId: propUserId }) 
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout)
       reconnectTimeout = null
+    }
+    if (scoreBubbleTimeout) {
+      clearTimeout(scoreBubbleTimeout)
+      scoreBubbleTimeout = null
     }
     stopCapture()
     player?.destroy()
