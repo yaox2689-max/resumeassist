@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -23,6 +25,14 @@ from storage.db.engine import init_db
 from storage.session.store import SessionStore
 from tool.builtins import TOOLS
 from tool.registry import ToolRegistry
+
+# Configure logging — show all app-level logs in terminal
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    stream=sys.stderr,
+    force=True,
+)
 
 
 @asynccontextmanager

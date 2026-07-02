@@ -237,7 +237,7 @@ async def _run_agent(
             if session_store._should_persist(event):
                 session_store.append_event(user_id, session_id, event)
     except Exception as e:
-        logger.error(f"Agent error: {e}")
+        logger.error("Agent error: %s", e, exc_info=True)
         error_event = FrontendEvent(
             type=EventType.ERROR,
             payload={"code": "agent_error", "message": str(e)},
