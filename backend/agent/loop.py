@@ -215,27 +215,28 @@ class ReActAgent:
 
             # Fire scoring after AI response — answer is now complete
             if user_input and _is_substantive_answer(user_input):
-                logger.info("[SCORING] Calling _fire_scoring for: %.50s", user_input)
                 self._fire_scoring(user_input)
-            else:
-                logger.info("[SCORING] Skipped — _is_substantive_answer=%s, len=%d",
-                            bool(user_input), len(user_input.strip()) if user_input else 0)
 
             # Return to idle
             self._set_state(AgentState.IDLE)
             yield self._make_state_event(AgentState.IDLE)
 
     def _fire_scoring(self, user_input: str) -> None:
-        """Fire background scoring immediately from code — no LLM decision needed."""
-        # Prevent recursive scoring (scoring agent triggering scoring on itself)
+        """Fire background scoring — once per unique user input."""
+        # Prevent recursive scoring
         if getattr(self, '_scoring_in_progress', False):
-            logger.debug("[SCORING] Skipped: already in scoring context")
             return
         event_queue = getattr(self, '_event_queue', None)
-        if not self._agent_factory:
+        if not self._agent_factory or not event_queue:
             return
-        if not event_queue:
+
+        # Deduplicate: only score each user input once
+        scored = getattr(self, '_scored_inputs', set())
+        if user_input in scored:
             return
+        scored.add(user_input)
+        self._scored_inputs = scored
+
         try:
             from tool.builtins.trigger_scoring import _run_scoring_async
 
@@ -250,7 +251,6 @@ class ReActAgent:
                         break
             dialogue = f"面试官: {last_question}\n候选人: {user_input}" if last_question else f"候选人: {user_input}"
             self._scoring_in_progress = True
-            logger.info("[SCORING] Creating scoring task, dialogue=%.80s", dialogue)
 
             async def _with_cleanup():
                 try:
