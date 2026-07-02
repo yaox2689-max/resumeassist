@@ -226,10 +226,21 @@ class ReActAgent:
         try:
             from tool.builtins.trigger_scoring import _run_scoring_async
 
+            # Include the interviewer's last question for context
+            events = self.session_store.read_events(self.user_id, self.session_id)
+            last_question = ""
+            for ev in reversed(events):
+                if ev.type in (EventType.ASSISTANT_TEXT_DONE, EventType.ASSISTANT_TRANSCRIPT_DONE):
+                    text = (ev.payload.get("text") or "").strip()
+                    if text:
+                        last_question = text
+                        break
+            dialogue = f"面试官: {last_question}\n候选人: {user_input}" if last_question else f"候选人: {user_input}"
+
             asyncio.create_task(
                 _run_scoring_async(
                     dimension="technical_depth",
-                    dialogue=f"候选人: {user_input}",
+                    dialogue=dialogue,
                     user_id=self.user_id,
                     session_id=self.session_id,
                     resume_id=self._resume_id,

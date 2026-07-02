@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from agent.factory import AgentFactory
 from agent.loop import CancelToken
-from api.auth import decode_token, get_current_user
+from api.auth import decode_token, get_current_user, get_optional_user
 from api.deps import get_agent_factory, get_session_store
 from api.schemas import EventType, FrontendEvent
 from storage.db.engine import async_session_factory
@@ -94,7 +94,7 @@ async def send_message(
     request: SendMessageRequest,
     agent_factory: AgentFactory = Depends(get_agent_factory),
     session_store: SessionStore = Depends(get_session_store),
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
 ):
     """Send a user message and trigger agent processing (for SSE stream)."""
     state = _get_or_create_session_state(session_id)
@@ -102,8 +102,8 @@ async def send_message(
     # Load session context from DB
     ctx = await _load_session_context(session_id)
 
-    # Verify the caller owns this session
-    if ctx["user_id"] != current_user.id:
+    # Verify access if user is authenticated
+    if current_user and ctx["user_id"] != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Get session events
@@ -250,7 +250,7 @@ async def _run_agent(
 @router.post("/sessions/{session_id}/interrupt")
 async def interrupt_agent(
     session_id: str,
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
 ):
     """Interrupt the running agent. Requires authentication."""
     state = _get_or_create_session_state(session_id)
