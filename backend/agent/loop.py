@@ -224,16 +224,14 @@ class ReActAgent:
 
     def _fire_scoring(self, user_input: str) -> None:
         """Fire background scoring immediately from code — no LLM decision needed."""
-        event_queue = getattr(self, '_event_queue', None)
         # Prevent recursive scoring (scoring agent triggering scoring on itself)
         if getattr(self, '_scoring_in_progress', False):
             logger.debug("[SCORING] Skipped: already in scoring context")
             return
+        event_queue = getattr(self, '_event_queue', None)
         if not self._agent_factory:
-            logger.debug("[SCORING] _fire_scoring skipped: no agent_factory")
             return
         if not event_queue:
-            logger.debug("[SCORING] _fire_scoring skipped: no event_queue")
             return
         try:
             from tool.builtins.trigger_scoring import _run_scoring_async

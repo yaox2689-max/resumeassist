@@ -42,6 +42,15 @@ async function loadHistory() {
     if (loaded.length > 0) {
       started.value = true
     }
+
+    // Restore latest score bubble from history
+    const events = data.events || []
+    for (let i = events.length - 1; i >= 0; i--) {
+      if (events[i].type === 'score.update') {
+        showScoreBubble(events[i].payload)
+        break
+      }
+    }
   } catch (e) {
     console.error('Failed to load session history:', e)
   } finally {
