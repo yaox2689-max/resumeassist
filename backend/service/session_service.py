@@ -44,6 +44,7 @@ class SessionService:
             updated_at=now,
             event_count=1,
             resume_id=request.resume_id,
+            jd_content=request.jd_content,
         )
         self.db.add(session)
         await self.db.commit()
@@ -273,6 +274,7 @@ class SessionService:
             status=session.status,
             mode=session.mode,
             resume_id=session.resume_id,
+            jd_content=session.jd_content,
             created_at=session.created_at.isoformat(),
             updated_at=session.updated_at.isoformat(),
             last_event_ts=session.last_event_ts.isoformat() if session.last_event_ts else None,

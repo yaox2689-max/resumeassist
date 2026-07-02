@@ -86,6 +86,7 @@ class ReActAgent:
         cancel_token: CancelToken | None = None,
         resume_content: str = "",
         resume_id: str = "",
+        jd_content: str = "",
         mcp_clients: dict | None = None,
         agent_factory: object | None = None,
     ) -> None:
@@ -102,6 +103,7 @@ class ReActAgent:
         self.state = AgentState.IDLE
         self._resume_content = resume_content
         self._resume_id = resume_id
+        self._jd_content = jd_content
         self._mcp_clients = mcp_clients or {}
         self._agent_factory = agent_factory
         self._text_buffer: list[str] = []
@@ -136,6 +138,7 @@ class ReActAgent:
                 resume_content=self._resume_content,
                 user_id=self.user_id,
                 resume_id=self._resume_id,
+                jd_content=self._jd_content,
             )
 
             # Check if compaction is needed

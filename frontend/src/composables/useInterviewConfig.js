@@ -18,6 +18,7 @@ export function useInterviewConfig() {
 
   const selectedResume = ref(null)
   const selectedType = ref('comprehensive')
+  const jdContent = ref('')
 
   const isConfigValid = computed(() => {
     return selectedResume.value !== null && selectedType.value !== null
@@ -52,6 +53,7 @@ export function useInterviewConfig() {
         profileId,
         mode: 'text',
         resumeId: selectedResume.value,
+        jdContent: jdContent.value.trim() || null,
       })
       router.push(`/interview/${result.session_id}?type=${selectedType.value}`)
     } catch (e) {
@@ -72,6 +74,7 @@ export function useInterviewConfig() {
     interviewTypes,
     selectedResume,
     selectedType,
+    jdContent,
     isConfigValid,
     starting,
     handleStartInterview,

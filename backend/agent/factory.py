@@ -60,6 +60,7 @@ class AgentFactory:
         resume_content: str = "",
         resume_id: str = "",
         interview_note: str = "",
+        jd_content: str = "",
     ) -> ReActAgent:
         """Create an agent instance (backward-compat dispatch).
 
@@ -80,6 +81,7 @@ class AgentFactory:
             db_session=db_session,
             resume_content=resume_content,
             resume_id=resume_id,
+            jd_content=jd_content,
         )
 
     # ── Text agent ───────────────────────────────────────────────────
@@ -93,6 +95,7 @@ class AgentFactory:
         db_session: object | None = None,
         resume_content: str = "",
         resume_id: str = "",
+        jd_content: str = "",
     ) -> ReActAgent:
         """Create a text-mode ReActAgent."""
         profile = self._get_profile(profile_id)
@@ -114,6 +117,7 @@ class AgentFactory:
             session_id=session_id,
             resume_content=resume_content,
             resume_id=resume_id,
+            jd_content=jd_content,
             mcp_clients=self.mcp_clients,
             agent_factory=self,
         )

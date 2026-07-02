@@ -70,6 +70,7 @@ class CreateSessionRequest(BaseModel):
     profile_id: str
     mode: str = "text"
     resume_id: str | None = None
+    jd_content: str | None = None  # Raw job description text
     user_id: str | None = None  # Overridden by auth token if available
 
 
@@ -90,6 +91,7 @@ class SessionMetadata(BaseModel):
     status: str  # active, paused, completed, abandoned
     mode: str
     resume_id: str | None = None
+    jd_content: str | None = None
     created_at: str
     updated_at: str
     last_event_ts: str | None = None

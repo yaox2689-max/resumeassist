@@ -116,14 +116,16 @@ export const api = {
   },
 
   // Interview sessions (real backend)
-  createSession({ profileId, mode = 'text', resumeId = null }) {
+  createSession({ profileId, mode = 'text', resumeId = null, jdContent = null }) {
+    const body = {
+      profile_id: profileId,
+      mode,
+      resume_id: resumeId,
+    }
+    if (jdContent) body.jd_content = jdContent
     return realRequest('/sessions', {
       method: 'POST',
-      body: JSON.stringify({
-        profile_id: profileId,
-        mode,
-        resume_id: resumeId,
-      }),
+      body: JSON.stringify(body),
     })
   },
 

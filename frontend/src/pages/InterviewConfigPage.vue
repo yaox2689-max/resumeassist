@@ -8,6 +8,7 @@ const {
   interviewTypes,
   selectedResume,
   selectedType,
+  jdContent,
   isConfigValid,
   starting,
   handleStartInterview,
@@ -90,6 +91,20 @@ function formatDate(iso) {
             </div>
           </label>
         </div>
+      </div>
+
+      <div class="bg-white dark:bg-surface border border-border-light dark:border-border rounded-xl p-6">
+        <div class="flex items-center gap-2 mb-4 font-semibold text-ink">
+          <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">3</div>
+          <span>岗位描述（可选）</span>
+        </div>
+        <p class="text-sm text-ink-muted mb-3">粘贴目标岗位的 JD，面试官会据此进行针对性提问</p>
+        <textarea
+          v-model="jdContent"
+          rows="4"
+          class="w-full px-4 py-3 rounded-xl border border-border-light dark:border-border bg-base text-ink text-sm resize-none focus:outline-none focus:border-primary transition-colors"
+          placeholder="粘贴岗位描述内容..."
+        ></textarea>
       </div>
 
       <div class="flex justify-end pt-4">
