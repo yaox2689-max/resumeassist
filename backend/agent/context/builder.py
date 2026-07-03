@@ -113,23 +113,33 @@ class ContextBuilder:
         return f"\n\n## 用户简历\n{resume_content}\n"
 
     def _load_memory(self, user_id: str, resume_id: str) -> str:
-        """Load and format memory files for injection (NOT cached — updated by tools)."""
+        """Load and format memory files for injection (NOT cached — updated by tools).
+
+        Only injects the most recent portion of each file to keep system prompt lean.
+        Full data stays on disk for finalize and historical reference.
+        """
         from storage.memory.store import MemoryStore
 
         store = MemoryStore(root_dir=self._memory_root)
         parts = []
 
+        # user.md: full injection (small footprint, shared across resumes)
         user_md = store.read_user(user_id)
         if user_md:
             parts.append(f"\n\n## 用户画像\n{user_md}")
 
-        interview_note = store.read_interview_note(user_id, resume_id)
-        if interview_note:
-            parts.append(f"\n\n## 面试官记忆\n{interview_note}")
+        # INTERVIEW_NOTE.md: only the latest 2000 chars (most recent sessions)
+        note = store.read_interview_note(user_id, resume_id)
+        if note:
+            note = note[-2000:]
+            parts.append(f"\n\n## 面试官记忆\n{note}")
 
-        real_ques = store.read_real_ques(user_id, resume_id)
-        if real_ques:
-            parts.append(f"\n\n## 真实面试题\n{real_ques}")
+        # REAL_QUES.md: only the latest 5 real questions
+        ques = store.read_real_ques(user_id, resume_id)
+        if ques:
+            lines = [l for l in ques.strip().split("\n") if l.strip()]
+            recent = "\n".join(lines[-5:]) if len(lines) > 5 else ques
+            parts.append(f"\n\n## 真实面试题\n{recent}")
 
         return "".join(parts)
 
